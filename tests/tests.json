@@ -1,0 +1,232 @@
+{
+    "prune": [
+        {
+            "id": 3,
+            "name": "simple prune",
+            "args": "",
+            "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"scripts\": {},\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\"\n|}\n|",
+            "stdout": "preparing..\n\n",
+            "stderr": ""
+        },
+        {
+            "id": 4,
+            "name": "prune flatten",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"scripts\": {},\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 5,
+            "name": "prune flatten (special files)",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {},\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
+            "output": "index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|\nREADME.md\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 6,
+            "name": "prune unknown profile",
+            "args": "--profile=garbage",
+            "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {},\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
+            "output": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {},\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
+            "stdout": "preparing..\n\n✕ Error: unknown profile garbage\n",
+            "stderr": "",
+            "exitCode": 255
+        },
+        {
+            "id": 7,
+            "name": "prune with library profile removes all but postinstall from scripts",
+            "args": "--profile=library",
+            "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {\n|    \"serve\": \"rollup -c -w\",\n|    \"build\": \"rollup -c\",\n|    \"postinstall\": \"npm run build\",\n|    \"prepack\": \"pkgbld prune\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
+            "output": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {\n|    \"postinstall\": \"npm run build\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\"\n|}\n|\nREADME.md\n|",
+            "stdout": "preparing..\n\n",
+            "stderr": ""
+        },
+        {
+            "id": 8,
+            "name": "prune with app profile removes all but postinstall and start from scripts",
+            "args": "prune --profile=app",
+            "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {\n|    \"start\": \"rollup -c -w\",\n|    \"build\": \"rollup -c\",\n|    \"postinstall\": \"npm run build\",\n|    \"prepack\": \"pkgbld prune\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
+            "output": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {\n|    \"start\": \"rollup -c -w\",\n|    \"postinstall\": \"npm run build\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\"\n|}\n|\nREADME.md\n|",
+            "stdout": "preparing..\n\n",
+            "stderr": ""
+        },
+        {
+            "id": 9,
+            "name": "prune with bin (object form) and flatten",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./dist/index.js\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
+            "output": "index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./index.js\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|\nREADME.md\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 10,
+            "name": "prune flatten with deep folder",
+            "args": "--flatten",
+            "input": "dist\n  dist\n    index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./dist/dist/index.js\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
+            "output": "index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./index.js\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|\nREADME.md\n|",
+            "stdout": "preparing..\n\nflattening dist/dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 11,
+            "name": "prune with bin (string form) and flatten",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": \"./dist/index.js\",\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
+            "output": "index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": \"./index.js\",\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|\nREADME.md\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 12,
+            "name": "multilevel",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\n  lib\n    index.js\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./dist/index.js\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/lib/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}",
+            "output": "index.js\n|\nlib\n  index.js\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./index.js\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./lib/index.js\"\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 13,
+            "name": "multilevel (another order)",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\n  lib\n    index.js\n|\npackage.json\n|{\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ],\n|  \"bin\": {\n|    \"mylib\": \"./dist/lib/index.js\"\n|  }\n|}",
+            "output": "index.js\n|\nlib\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"bin\": {\n|    \"mylib\": \"./lib/index.js\"\n|  }\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 14,
+            "name": "flatten specific folder",
+            "args": "--flatten=dist",
+            "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 15,
+            "name": "file already exists",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\nindex.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "dist\n  index.js\n|\nindex.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "exitCode": 255,
+            "stdout": "preparing..\n\nflattening dist...\n✕ Error: dist folder cannot be flattened because files already exist: index.js\n",
+            "stderr": ""
+        },
+        {
+            "id": 16,
+            "name": "2 dist folders",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\ndist2\n  index2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"module\": \"./dist2/index2.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "dist\n  index.js\n|\ndist2\n  index2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"module\": \"./dist2/index2.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "exitCode": 255,
+            "stdout": "preparing..\n\n✕ Error: could not find dist folder\n",
+            "stderr": ""
+        },
+        {
+            "id": 17,
+            "name": "2 dist folders (flatten both separately)",
+            "args": "--flatten=dist && node ../../index.js --flatten=dist2",
+            "input": "dist\n  index.js\n|\ndist2\n  index2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"module\": \"./dist2/index2.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "index.js\n|\nindex2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"module\": \"./index2.js\"\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\npreparing..\n\nflattening dist2...\n",
+            "stderr": ""
+        },
+        {
+            "id": 18,
+            "name": "folder with / at the end",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist/\"\n|  ]\n|}",
+            "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 19,
+            "name": "flatten with exports",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\n  index.mjs\n|\n  second.js\n|\n  second.mjs\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"exports\": {\n|    \".\": {\n|      \"import\": \"./dist/index.mjs\",\n|      \"require\": \"./dist/index.js\"\n|    },\n|    \"./second\": {\n|      \"import\": \"./dist/second.mjs\",\n|      \"require\": \"./dist/second.js\"\n|    }\n|  },\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}\nsecond\n  package.json\n|",
+            "output": "index.js\n|\nindex.mjs\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"exports\": {\n|    \".\": {\n|      \"import\": \"./index.mjs\",\n|      \"require\": \"./index.js\"\n|    },\n|    \"./second\": {\n|      \"import\": \"./second.mjs\",\n|      \"require\": \"./second.js\"\n|    }\n|  },\n|  \"files\": [\n|    \"index.mjs\",\n|    \"second.js\",\n|    \"second.mjs\"\n|  ]\n|}\n|\nsecond.js\n|\nsecond.mjs\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 20,
+            "name": "flatten pkg with extra number property",
+            "args": "--flatten",
+            "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ],\n|  \"extra\": 100\n|}",
+            "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"extra\": 100\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 21,
+            "name": "flatten with directories.bin",
+            "args": "--flatten",
+            "input": "dist\n  bin\n    1.js\n|\n    2.js\n|\n  index.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "bin\n  1.js\n|\n  2.js\n|\nindex.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"bin\"\n|  ]\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 22,
+            "name": "flatten with directories.bin 2",
+            "args": "--flatten --optimizeFiles=false",
+            "input": "dist\n  bin\n    1.js\n|\n    2.js\n|\n  index.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "bin\n  1.js\n|\n  2.js\n|\nindex.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"bin/1.js\",\n|    \"bin/2.js\"\n|  ]\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist...\n",
+            "stderr": ""
+        },
+        {
+            "id": 23,
+            "name": "deep optimize",
+            "args": "",
+            "input": "dist\n  2\n    bin\n      1.js\n|\n      2.js\n|\n    index.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/2/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/2/index.js\",\n|  \"files\": [\n|    \"dist/2/bin/1.js\",\n|    \"dist/2/bin/2.js\",\n|    \"dist/2/index.js\"\n|  ]\n|}",
+            "output": "dist\n  2\n    bin\n      1.js\n|\n      2.js\n|\n    index.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/2/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/2/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}\n|",
+            "stdout": "preparing..\n\n",
+            "stderr": ""
+        },
+        {
+            "id": 24,
+            "name": "deep optimize 2",
+            "args": "",
+            "input": "dist\n  2\n    1\n      index.js\n|\n    bin\n      1.js\n|\n      2.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/2/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/2/1/index.js\",\n|  \"files\": [\n|    \"dist/2/bin/1.js\",\n|    \"dist/2/bin/2.js\",\n|    \"dist/2/1/index.js\"\n|  ]\n|}",
+            "output": "dist\n  2\n    1\n      index.js\n|\n    bin\n      1.js\n|\n      2.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/2/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/2/1/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}\n|",
+            "stdout": "preparing..\n\n",
+            "stderr": ""
+        },
+        {
+            "id": 25,
+            "name": "remove sourcemaps",
+            "args": "--removeSourcemaps",
+            "input": "dist\n  index.js\n|// something\n|\n|console.log('Hello, world!');\n|\n|//# sourceMappingURL=index.js.map\n|\n  index.js.map\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "dist\n  index.js\n|// something\n|\n|console.log('Hello, world!');\n|\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\"\n|}\n|",
+            "stdout": "preparing..\n\n",
+            "stderr": ""
+        },
+        {
+            "id": 26,
+            "name": "flatten directories.bin (2 files)",
+            "args": "--flatten dist/bin",
+            "input": "dist\n  bin\n    1.js\n|\n    2.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "1.js\n|\n2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"bin\": {\n|    \"1\": \"1.js\",\n|    \"2\": \"2.js\"\n|  }\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist/bin...\n",
+            "stderr": ""
+        },
+        {
+            "id": 27,
+            "name": "flatten directories.bin (1 file + man)",
+            "args": "--flatten dist/bin",
+            "input": "dist\n  bin\n    2.js\n|\nman\n  doc.txt\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/bin\",\n|    \"man\": \"./man\"\n|  },\n|  \"name\": \"mylib\",\n|  \"files\": [\n|    \"dist\",\n|    \"man\"\n|  ]\n|}",
+            "output": "2.js\n|\nman\n  doc.txt\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"man\": \"./man\"\n|  },\n|  \"name\": \"mylib\",\n|  \"bin\": \"2.js\"\n|}\n|",
+            "stdout": "preparing..\n\nflattening dist/bin...\n",
+            "stderr": ""
+        }
+    ]
+}
