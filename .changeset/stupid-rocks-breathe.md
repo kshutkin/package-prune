@@ -1,5 +1,0 @@
----
-'pkgprn': minor
----
-
-initial release
