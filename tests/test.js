@@ -142,8 +142,8 @@ for (const [suiteName, suiteTestCases] of Object.entries(tests)) {
                     tc.stderr = result?.stderr || '';
                     assert.ok(true);
                 } else {
-                    assert.strictEqual(result?.code || 0, tc.exitCode || 0);
                     assert.strictEqual(actualOutput, tc.output);
+                    assert.strictEqual(result?.code || 0, tc.exitCode || 0);
                     assert.strictEqual(
                         replaceTime(result?.stdout || ''),
                         tc.stdout

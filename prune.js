@@ -459,26 +459,30 @@ async function isDirectory(file) {
  * @returns {Promise<Array<string>>}
  */
 async function walkDir(dir, ignoreDirs = []) {
-    const entries = await readdir(dir, {
-        recursive: true,
-        withFileTypes: true,
-    });
+    const entries = await readdir(dir, { withFileTypes: true });
+    /**
+     * @type {string[]}
+     */
     const files = [];
 
+    // Process files first
     for (const entry of entries) {
-        if (entry.isFile()) {
-            const childPath = entry.parentPath
-                ? path.join(entry.parentPath, entry.name)
-                : entry.name;
+        if (!entry.isDirectory()) {
+            const childPath = path.join(entry.parentPath, entry.name);
+            files.push(childPath);
+        }
+    }
 
-            // Check if any part of the path contains ignored directories
-            const pathParts = path.relative(dir, childPath).split(path.sep);
-            const shouldIgnore = pathParts.some((part) =>
-                ignoreDirs.includes(part)
-            );
+    // Then process directories
+    for (const entry of entries) {
+        if (entry.isDirectory()) {
+            const childPath = path.join(entry.parentPath, entry.name);
+            const relativePath = path.relative(dir, childPath);
+            const topLevelDir = relativePath.split(path.sep)[0];
 
-            if (!shouldIgnore) {
-                files.push(childPath);
+            if (!ignoreDirs.includes(topLevelDir)) {
+                const childFiles = await walkDir(childPath);
+                files.push(...childFiles);
             }
         }
     }
