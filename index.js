@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-import { createLogger } from '@niceties/logger';
-import { cli } from 'cleye';
 import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { cli } from 'cleye';
+
+import { createLogger } from '@niceties/logger';
+
 import { prunePkg } from './prune.js';
 
 // globals
@@ -21,8 +24,7 @@ try {
     const cliOptions = cli({
         name: 'pkgprn',
         version: version ?? '<unknown>',
-        description:
-            'prune devDependencies and redundant scripts from package.json',
+        description: 'prune devDependencies and redundant scripts from package.json',
         flags: {
             profile: {
                 type: String,
@@ -31,7 +33,7 @@ try {
             },
             flatten: {
                 type: FlattenParam,
-                description: 'flatten package files',
+                description: 'flatten package files (comma-separated for multiple directories)',
                 default: false,
             },
             removeSourcemaps: {
@@ -66,9 +68,7 @@ try {
 async function getMyVersion() {
     const pkg = await readPackage(resolve(__dirname));
 
-    return pkg && 'version' in pkg && typeof pkg.version === 'string'
-        ? pkg.version
-        : '<unknown>';
+    return pkg && 'version' in pkg && typeof pkg.version === 'string' ? pkg.version : '<unknown>';
 }
 
 /**
@@ -96,9 +96,6 @@ async function writePackage(pkg) {
  * @param {string | false} value
  */
 function FlattenParam(value) {
-    if (typeof value === 'boolean') {
-        return value; // false
-    }
     if (value === '') {
         return true; // means auto
     }
