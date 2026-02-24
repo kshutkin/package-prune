@@ -295,7 +295,6 @@ async function flatten(pkg, flatten, logger) {
             typeof pkg.directories.bin === 'string' &&
             normalizePath(pkg.directories.bin) === distDir
         ) {
-            // biome-ignore lint/performance/noDelete: <explanation>
             delete pkg.directories.bin;
             if (Object.keys(pkg.directories).length === 0) {
                 pkg.directories = undefined;

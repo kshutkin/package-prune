@@ -24,7 +24,9 @@ try {
     const cliOptions = cli({
         name: 'pkgprn',
         version: version ?? '<unknown>',
-        description: 'prune devDependencies and redundant scripts from package.json',
+        help: {
+            description: 'prune devDependencies and redundant scripts from package.json',
+        },
         flags: {
             profile: {
                 type: String,
