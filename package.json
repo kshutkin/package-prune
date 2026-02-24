@@ -1,37 +1,37 @@
 {
-	"name": "pkgprn",
-	"version": "0.1.0",
-	"license": "MIT",
-	"author": "Konstantin Shutkin",
-	"bin": "./index.js",
-	"type": "module",
-	"description": "Prune package.json before publish",
-	"homepage": "https://github.com/kshutkin/package-prune#readme",
-	"bugs": {
-		"url": "https://github.com/kshutkin/package-prune/issues"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/kshutkin/package-prune.git"
-	},
-	"main": "prune.js",
-	"scripts": {
-		"lint": "biome lint index.js prune.js",
-		"lint:fix": "biome check --write index.js prune.js",
-		"ci:publish": "changeset publish",
-		"prepack": "node ./index.js",
-		"test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env ./tests/test.js"
-	},
-	"dependencies": {
-		"cleye": "2.2.1",
-		"jsonata": "^2.1.0",
-		"@niceties/logger": "^1.1.13"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "2.3.2",
-		"@changesets/cli": "2.27.11",
-		"@types/node": "^20.14.15",
-		"cli-test-helper": "^0.1.2",
-		"c8": "^10.1.3"
-	}
+    "name": "pkgprn",
+    "version": "0.1.0",
+    "license": "MIT",
+    "author": "Konstantin Shutkin",
+    "bin": "./index.js",
+    "type": "module",
+    "description": "Prune package.json before publish",
+    "homepage": "https://github.com/kshutkin/package-prune#readme",
+    "bugs": {
+        "url": "https://github.com/kshutkin/package-prune/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/kshutkin/package-prune.git"
+    },
+    "main": "prune.js",
+    "scripts": {
+        "lint": "biome lint index.js prune.js",
+        "lint:fix": "biome check --write index.js prune.js",
+        "ci:publish": "changeset publish",
+        "prepack": "node ./index.js",
+        "test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env ./tests/test.js"
+    },
+    "dependencies": {
+        "cleye": "2.2.1",
+        "jsonata": "^2.1.0",
+        "@niceties/logger": "^1.1.13"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.3.2",
+        "@changesets/cli": "2.27.11",
+        "@types/node": "^20.14.15",
+        "cli-test-helper": "^0.1.2",
+        "c8": "^11.0.0"
+    }
 }
