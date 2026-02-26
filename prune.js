@@ -2,8 +2,39 @@ import { access, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'n
 import path from 'node:path';
 
 /**
- * @typedef {Object} Logger
- * @property {function(string): void} update
+ * Files always included by npm regardless of the `files` array.
+ * README & LICENSE/LICENCE are matched case-insensitively by basename (without extension).
+ */
+const alwaysIncludedExact = ['package.json'];
+const alwaysIncludedBasenames = ['README', 'LICENSE', 'LICENCE'];
+
+/**
+ * Files/directories always ignored by npm by default.
+ */
+const alwaysIgnored = ['.DS_Store', '.hg', '.lock-wscript', '.svn', 'CVS', 'config.gypi', 'npm-debug.log'];
+
+/**
+ * Glob-like patterns for always-ignored files.
+ * Each entry has a `test` function that checks whether a basename matches.
+ */
+const alwaysIgnoredPatterns = [
+    /** `*.orig` */
+    { test: (/** @type {string} */ basename) => basename.endsWith('.orig') },
+    /** `.*.swp` */
+    { test: (/** @type {string} */ basename) => basename.startsWith('.') && basename.endsWith('.swp') },
+    /** `._*` */
+    { test: (/** @type {string} */ basename) => basename.startsWith('._') },
+    /** `.wafpickle-N` */
+    { test: (/** @type {string} */ basename) => /^\.wafpickle-\d+$/.test(basename) },
+];
+
+/**
+ * Subset of always-ignored that can never be included, even if listed in `files`.
+ */
+const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb']);
+
+/**
+ * @typedef {ReturnType<typeof import('@niceties/logger').createLogger>} Logger
  */
 
 /**
@@ -25,6 +56,7 @@ import path from 'node:path';
  * @property {string|boolean} flatten
  * @property {boolean} removeSourcemaps
  * @property {boolean} optimizeFiles
+ * @property {boolean} cleanupFiles
  */
 
 /**
@@ -57,6 +89,12 @@ export async function prunePkg(pkg, options, logger) {
         }
     }
 
+    if (options.cleanupFiles) {
+        await removeJunkFiles('.');
+    } else if (options.flatten) {
+        logger('cleanup is disabled, junk files may cause flatten to fail', 2);
+    }
+
     if (options.flatten) {
         await flatten(pkg, options.flatten, logger);
     }
@@ -80,19 +118,7 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (pkg.files && Array.isArray(pkg.files) && options.optimizeFiles) {
-        const filterFiles = ['package.json'];
-        const specialFiles = ['README', 'LICENSE', 'LICENCE'];
-        if (pkg.main && typeof pkg.main === 'string') {
-            filterFiles.push(normalizePath(pkg.main));
-        }
-        if (pkg.bin) {
-            if (typeof pkg.bin === 'string') {
-                filterFiles.push(normalizePath(pkg.bin));
-            }
-            if (typeof pkg.bin === 'object' && pkg.bin !== null) {
-                filterFiles.push(...Object.values(pkg.bin).map(normalizePath));
-            }
-        }
+        const filterFiles = getAlwaysIncludedFiles(pkg);
 
         const depthToFiles = new Map();
 
@@ -150,7 +176,7 @@ export async function prunePkg(pkg, options, logger) {
             const basenameWithoutExtension = path.basename(fileNormalized, path.extname(fileNormalized)).toUpperCase();
             return (
                 !filterFiles.includes(fileNormalized) &&
-                ((dirname !== '' && dirname !== '.') || !specialFiles.includes(basenameWithoutExtension))
+                ((dirname !== '' && dirname !== '.') || !alwaysIncludedBasenames.includes(basenameWithoutExtension))
             );
         });
 
@@ -178,6 +204,10 @@ export async function prunePkg(pkg, options, logger) {
         if (pkg.files.length === 0) {
             pkg.files = undefined;
         }
+    }
+
+    if (pkg.files && Array.isArray(pkg.files) && options.cleanupFiles) {
+        await cleanupDir(pkg, logger);
     }
 }
 
@@ -513,6 +543,169 @@ async function isExists(file) {
         throw e;
     }
     return file;
+}
+
+/**
+ * Returns the list of files always included by npm for a given package.
+ * This includes `package.json`, the `main` entry, and all `bin` entries.
+ * @param {PackageJson} pkg
+ * @returns {string[]}
+ */
+function getAlwaysIncludedFiles(pkg) {
+    const files = [...alwaysIncludedExact];
+    if (pkg.main && typeof pkg.main === 'string') {
+        files.push(normalizePath(pkg.main));
+    }
+    if (pkg.bin) {
+        if (typeof pkg.bin === 'string') {
+            files.push(normalizePath(pkg.bin));
+        }
+        if (typeof pkg.bin === 'object' && pkg.bin !== null) {
+            files.push(...Object.values(pkg.bin).map(normalizePath));
+        }
+    }
+    return files;
+}
+
+/**
+ * Checks whether a file or directory name matches the always-ignored patterns.
+ * @param {string} basename - The basename of the file or directory.
+ * @returns {boolean}
+ */
+function isAlwaysIgnored(basename) {
+    if (alwaysIgnored.includes(basename)) {
+        return true;
+    }
+    return alwaysIgnoredPatterns.some(pattern => pattern.test(basename));
+}
+
+/**
+ * Recursively removes junk files (always-ignored by npm) from a directory tree.
+ * @param {string} dir
+ */
+async function removeJunkFiles(dir) {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+        if (hardIgnored.has(entry.name)) {
+            continue;
+        }
+        const fullPath = path.join(dir, entry.name);
+        if (isAlwaysIgnored(entry.name)) {
+            await rm(fullPath, { recursive: true, force: true });
+        } else if (entry.isDirectory()) {
+            await removeJunkFiles(fullPath);
+        }
+    }
+}
+
+/**
+ * Checks whether a root-level file is always included by npm (case-insensitive basename match).
+ * @param {string} file - The file path relative to the package root.
+ * @returns {boolean}
+ */
+function isAlwaysIncludedByBasename(file) {
+    const dir = path.dirname(file);
+    if (dir !== '' && dir !== '.') {
+        return false;
+    }
+    const basenameWithoutExtension = path.basename(file, path.extname(file)).toUpperCase();
+    return alwaysIncludedBasenames.includes(basenameWithoutExtension);
+}
+
+/**
+ * Removes files from the working directory that are not included in the `files` array
+ * or the always-included list, then drops the `files` array from package.json.
+ * @param {PackageJson} pkg
+ * @param {Logger} logger
+ */
+async function cleanupDir(pkg, logger) {
+    logger.update('cleaning up files...');
+
+    const alwaysIncludedFiles = getAlwaysIncludedFiles(pkg);
+    const filesEntries = /** @type {string[]} */ (pkg.files).map(normalizePath);
+
+    const entries = await readdir('.');
+
+    for (const entry of entries) {
+        if (hardIgnored.has(entry)) {
+            continue;
+        }
+
+        const normalized = normalizePath(entry);
+
+        // check if matched by files entries (exact or parent directory)
+        if (filesEntries.some(f => normalized === f || normalized.startsWith(`${f}/`))) {
+            continue;
+        }
+
+        // check if any files entry is under this directory
+        if (filesEntries.some(f => f.startsWith(`${normalized}/`))) {
+            // need to recurse into this directory for granular cleanup
+            await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+            continue;
+        }
+
+        // check if always-included by exact path
+        if (alwaysIncludedFiles.includes(normalized)) {
+            continue;
+        }
+
+        // check if always-included by basename (root level)
+        if (isAlwaysIncludedByBasename(normalized)) {
+            continue;
+        }
+
+        // not matched - remove
+        await rm(entry, { recursive: true, force: true });
+    }
+
+    pkg.files = undefined;
+}
+
+/**
+ * Recursively cleans up a subdirectory, keeping only files matched by the files entries
+ * or always-included files.
+ * @param {string} dir
+ * @param {string[]} filesEntries
+ * @param {string[]} alwaysIncludedFiles
+ */
+async function cleanupSubDir(dir, filesEntries, alwaysIncludedFiles) {
+    const entries = await readdir(dir);
+
+    for (const entry of entries) {
+        if (hardIgnored.has(entry)) {
+            continue;
+        }
+
+        const fullPath = path.join(dir, entry);
+
+        const normalized = normalizePath(fullPath);
+
+        // check if matched by files entries
+        if (filesEntries.some(f => normalized === f || normalized.startsWith(`${f}/`))) {
+            continue;
+        }
+
+        // check if any files entry is under this path
+        if (filesEntries.some(f => f.startsWith(`${normalized}/`))) {
+            await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+            continue;
+        }
+
+        // check if always-included by exact path
+        if (alwaysIncludedFiles.includes(normalized)) {
+            continue;
+        }
+
+        // not matched - remove
+        await rm(fullPath, { recursive: true, force: true });
+    }
+
+    // remove the directory if it's now empty
+    const remaining = await readdir(dir);
+    if (remaining.length === 0) {
+        await rm(dir, { recursive: true, force: true });
+    }
 }
 
 function getScriptsData() {

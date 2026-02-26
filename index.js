@@ -48,6 +48,11 @@ try {
                 description: 'optimize files array',
                 default: true,
             },
+            cleanupFiles: {
+                type: Boolean,
+                description: 'cleanup files not included in files array',
+                default: true,
+            },
         },
     });
 
