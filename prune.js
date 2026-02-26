@@ -2,6 +2,55 @@ import { access, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'n
 import path from 'node:path';
 
 /**
+ * Files always included by npm regardless of the `files` array.
+ * README & LICENSE/LICENCE are matched case-insensitively by basename (without extension).
+ */
+const alwaysIncludedExact = ['package.json'];
+const alwaysIncludedBasenames = ['README', 'LICENSE', 'LICENCE'];
+
+/**
+ * Files/directories always ignored by npm by default.
+ * Most of these can be overridden by explicitly including them in `files`,
+ * except for the entries in `hardIgnored`.
+ */
+const alwaysIgnored = [
+    'package-lock.json',
+    'pnpm-lock.yaml',
+    'yarn.lock',
+    'bun.lockb',
+    '.git',
+    '.npmrc',
+    'node_modules',
+    '.DS_Store',
+    '.hg',
+    '.lock-wscript',
+    '.svn',
+    'CVS',
+    'config.gypi',
+    'npm-debug.log',
+];
+
+/**
+ * Glob-like patterns for always-ignored files.
+ * Each entry has a `test` function that checks whether a basename matches.
+ */
+const alwaysIgnoredPatterns = [
+    /** `*.orig` */
+    { test: (/** @type {string} */ basename) => basename.endsWith('.orig') },
+    /** `.*.swp` */
+    { test: (/** @type {string} */ basename) => basename.startsWith('.') && basename.endsWith('.swp') },
+    /** `._*` */
+    { test: (/** @type {string} */ basename) => basename.startsWith('._') },
+    /** `.wafpickle-N` */
+    { test: (/** @type {string} */ basename) => /^\.wafpickle-\d+$/.test(basename) },
+];
+
+/**
+ * Subset of always-ignored that can never be included, even if listed in `files`.
+ */
+const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb']);
+
+/**
  * @typedef {Object} Logger
  * @property {function(string): void} update
  */
@@ -80,19 +129,7 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (pkg.files && Array.isArray(pkg.files) && options.optimizeFiles) {
-        const filterFiles = ['package.json'];
-        const specialFiles = ['README', 'LICENSE', 'LICENCE'];
-        if (pkg.main && typeof pkg.main === 'string') {
-            filterFiles.push(normalizePath(pkg.main));
-        }
-        if (pkg.bin) {
-            if (typeof pkg.bin === 'string') {
-                filterFiles.push(normalizePath(pkg.bin));
-            }
-            if (typeof pkg.bin === 'object' && pkg.bin !== null) {
-                filterFiles.push(...Object.values(pkg.bin).map(normalizePath));
-            }
-        }
+        const filterFiles = getAlwaysIncludedFiles(pkg);
 
         const depthToFiles = new Map();
 
@@ -150,7 +187,7 @@ export async function prunePkg(pkg, options, logger) {
             const basenameWithoutExtension = path.basename(fileNormalized, path.extname(fileNormalized)).toUpperCase();
             return (
                 !filterFiles.includes(fileNormalized) &&
-                ((dirname !== '' && dirname !== '.') || !specialFiles.includes(basenameWithoutExtension))
+                ((dirname !== '' && dirname !== '.') || !alwaysIncludedBasenames.includes(basenameWithoutExtension))
             );
         });
 
@@ -513,6 +550,54 @@ async function isExists(file) {
         throw e;
     }
     return file;
+}
+
+/**
+ * Returns the list of files always included by npm for a given package.
+ * This includes `package.json`, the `main` entry, and all `bin` entries.
+ * @param {PackageJson} pkg
+ * @returns {string[]}
+ */
+function getAlwaysIncludedFiles(pkg) {
+    const files = [...alwaysIncludedExact];
+    if (pkg.main && typeof pkg.main === 'string') {
+        files.push(normalizePath(pkg.main));
+    }
+    if (pkg.bin) {
+        if (typeof pkg.bin === 'string') {
+            files.push(normalizePath(pkg.bin));
+        }
+        if (typeof pkg.bin === 'object' && pkg.bin !== null) {
+            files.push(...Object.values(pkg.bin).map(normalizePath));
+        }
+    }
+    return files;
+}
+
+/**
+ * Checks whether a file or directory name matches the always-ignored patterns.
+ * @param {string} basename - The basename of the file or directory.
+ * @returns {boolean}
+ */
+function isAlwaysIgnored(basename) {
+    if (alwaysIgnored.includes(basename)) {
+        return true;
+    }
+    return alwaysIgnoredPatterns.some(pattern => pattern.test(basename));
+}
+
+/**
+ * Checks whether a root-level file is always included by npm (case-insensitive basename match).
+ * @param {string} file - The file path relative to the package root.
+ * @returns {boolean}
+ */
+function isAlwaysIncludedByBasename(file) {
+    const dir = path.dirname(file);
+    if (dir !== '' && dir !== '.') {
+        return false;
+    }
+    const basenameWithoutExtension = path.basename(file, path.extname(file)).toUpperCase();
+    return alwaysIncludedBasenames.includes(basenameWithoutExtension);
 }
 
 function getScriptsData() {
