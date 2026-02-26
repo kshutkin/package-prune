@@ -10,25 +10,8 @@ const alwaysIncludedBasenames = ['README', 'LICENSE', 'LICENCE'];
 
 /**
  * Files/directories always ignored by npm by default.
- * Most of these can be overridden by explicitly including them in `files`,
- * except for the entries in `hardIgnored`.
  */
-const alwaysIgnored = [
-    'package-lock.json',
-    'pnpm-lock.yaml',
-    'yarn.lock',
-    'bun.lockb',
-    '.git',
-    '.npmrc',
-    'node_modules',
-    '.DS_Store',
-    '.hg',
-    '.lock-wscript',
-    '.svn',
-    'CVS',
-    'config.gypi',
-    'npm-debug.log',
-];
+const alwaysIgnored = ['.DS_Store', '.hg', '.lock-wscript', '.svn', 'CVS', 'config.gypi', 'npm-debug.log'];
 
 /**
  * Glob-like patterns for always-ignored files.
@@ -51,7 +34,7 @@ const alwaysIgnoredPatterns = [
 const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb']);
 
 /**
- * @typedef {Object} Logger
+ * @typedef {function(string, number=): void} Logger
  * @property {function(string): void} update
  */
 
@@ -105,6 +88,12 @@ export async function prunePkg(pkg, options, logger) {
         if (Object.keys(pkg.scripts).length === 0) {
             pkg.scripts = undefined;
         }
+    }
+
+    if (options.cleanupFiles) {
+        await removeJunkFiles('.');
+    } else if (options.flatten) {
+        logger('cleanup is disabled, junk files may cause flatten to fail', 2);
     }
 
     if (options.flatten) {
@@ -592,6 +581,25 @@ function isAlwaysIgnored(basename) {
 }
 
 /**
+ * Recursively removes junk files (always-ignored by npm) from a directory tree.
+ * @param {string} dir
+ */
+async function removeJunkFiles(dir) {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+        if (hardIgnored.has(entry.name)) {
+            continue;
+        }
+        const fullPath = path.join(dir, entry.name);
+        if (isAlwaysIgnored(entry.name)) {
+            await rm(fullPath, { recursive: true, force: true });
+        } else if (entry.isDirectory()) {
+            await removeJunkFiles(fullPath);
+        }
+    }
+}
+
+/**
  * Checks whether a root-level file is always included by npm (case-insensitive basename match).
  * @param {string} file - The file path relative to the package root.
  * @returns {boolean}
@@ -621,12 +629,6 @@ async function cleanupDir(pkg, logger) {
 
     for (const entry of entries) {
         if (hardIgnored.has(entry)) {
-            continue;
-        }
-
-        // remove always-ignored junk files (e.g. .DS_Store, *.orig)
-        if (isAlwaysIgnored(entry)) {
-            await rm(entry, { recursive: true, force: true });
             continue;
         }
 
@@ -677,12 +679,6 @@ async function cleanupSubDir(dir, filesEntries, alwaysIncludedFiles) {
         }
 
         const fullPath = path.join(dir, entry);
-
-        // remove always-ignored junk files (e.g. .DS_Store, *.orig)
-        if (isAlwaysIgnored(entry)) {
-            await rm(fullPath, { recursive: true, force: true });
-            continue;
-        }
 
         const normalized = normalizePath(fullPath);
 
