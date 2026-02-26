@@ -34,7 +34,7 @@ const alwaysIgnoredPatterns = [
 const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb']);
 
 /**
- * @typedef {((msg: string, level?: number) => void) & { update: (msg: string) => void }} Logger
+ * @typedef {ReturnType<typeof import('@niceties/logger').createLogger>} Logger
  */
 
 /**
