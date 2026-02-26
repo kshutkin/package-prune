@@ -1,0 +1,5 @@
+---
+'pkgprn': minor
+---
+
+improved cleanup
