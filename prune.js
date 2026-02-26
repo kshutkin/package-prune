@@ -74,6 +74,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {string|boolean} flatten
  * @property {boolean} removeSourcemaps
  * @property {boolean} optimizeFiles
+ * @property {boolean} cleanupFiles
  */
 
 /**
@@ -215,6 +216,10 @@ export async function prunePkg(pkg, options, logger) {
         if (pkg.files.length === 0) {
             pkg.files = undefined;
         }
+    }
+
+    if (pkg.files && Array.isArray(pkg.files) && options.cleanupFiles) {
+        await cleanupDir(pkg, logger);
     }
 }
 
@@ -598,6 +603,114 @@ function isAlwaysIncludedByBasename(file) {
     }
     const basenameWithoutExtension = path.basename(file, path.extname(file)).toUpperCase();
     return alwaysIncludedBasenames.includes(basenameWithoutExtension);
+}
+
+/**
+ * Removes files from the working directory that are not included in the `files` array
+ * or the always-included list, then drops the `files` array from package.json.
+ * @param {PackageJson} pkg
+ * @param {Logger} logger
+ */
+async function cleanupDir(pkg, logger) {
+    logger.update('cleaning up files...');
+
+    const alwaysIncludedFiles = getAlwaysIncludedFiles(pkg);
+    const filesEntries = /** @type {string[]} */ (pkg.files).map(normalizePath);
+
+    const entries = await readdir('.');
+
+    for (const entry of entries) {
+        if (hardIgnored.has(entry)) {
+            continue;
+        }
+
+        // remove always-ignored junk files (e.g. .DS_Store, *.orig)
+        if (isAlwaysIgnored(entry)) {
+            await rm(entry, { recursive: true, force: true });
+            continue;
+        }
+
+        const normalized = normalizePath(entry);
+
+        // check if matched by files entries (exact or parent directory)
+        if (filesEntries.some(f => normalized === f || normalized.startsWith(`${f}/`))) {
+            continue;
+        }
+
+        // check if any files entry is under this directory
+        if (filesEntries.some(f => f.startsWith(`${normalized}/`))) {
+            // need to recurse into this directory for granular cleanup
+            await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+            continue;
+        }
+
+        // check if always-included by exact path
+        if (alwaysIncludedFiles.includes(normalized)) {
+            continue;
+        }
+
+        // check if always-included by basename (root level)
+        if (isAlwaysIncludedByBasename(normalized)) {
+            continue;
+        }
+
+        // not matched - remove
+        await rm(entry, { recursive: true, force: true });
+    }
+
+    pkg.files = undefined;
+}
+
+/**
+ * Recursively cleans up a subdirectory, keeping only files matched by the files entries
+ * or always-included files.
+ * @param {string} dir
+ * @param {string[]} filesEntries
+ * @param {string[]} alwaysIncludedFiles
+ */
+async function cleanupSubDir(dir, filesEntries, alwaysIncludedFiles) {
+    const entries = await readdir(dir);
+
+    for (const entry of entries) {
+        if (hardIgnored.has(entry)) {
+            continue;
+        }
+
+        const fullPath = path.join(dir, entry);
+
+        // remove always-ignored junk files (e.g. .DS_Store, *.orig)
+        if (isAlwaysIgnored(entry)) {
+            await rm(fullPath, { recursive: true, force: true });
+            continue;
+        }
+
+        const normalized = normalizePath(fullPath);
+
+        // check if matched by files entries
+        if (filesEntries.some(f => normalized === f || normalized.startsWith(`${f}/`))) {
+            continue;
+        }
+
+        // check if any files entry is under this path
+        if (filesEntries.some(f => f.startsWith(`${normalized}/`))) {
+            await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+            continue;
+        }
+
+        // check if always-included by exact path
+        if (alwaysIncludedFiles.includes(normalized)) {
+            continue;
+        }
+
+        // not matched - remove
+        await rm(fullPath, { recursive: true, force: true });
+    }
+
+    // remove the directory if it's now empty
+    const remaining = await readdir(dir);
+    if (remaining.length === 0) {
+        await rm(dir, { recursive: true, force: true });
+    }
 }
 
 function getScriptsData() {
