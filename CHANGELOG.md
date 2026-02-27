@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.2.1
+
+### Patch Changes
+
+- 5182c31: added types
+
 ## 0.2.0
 
 ### Minor Changes
