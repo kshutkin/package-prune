@@ -35,7 +35,7 @@
         "lint": "biome lint index.js prune.js",
         "lint:fix": "biome check --write index.js prune.js",
         "ci:publish": "changeset publish",
-        "prepack": "dts-buddy && node ./index.js",
+        "prepack": "dts-buddy && node ./index.js --flatten=types",
         "test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env ./tests/test.js"
     },
     "files": [
