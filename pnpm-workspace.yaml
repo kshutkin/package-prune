@@ -1,2 +1,4 @@
+overrides:
+    yargs: ^18.0.0
 onlyBuiltDependencies:
-  - '@biomejs/biome'
+    - "@biomejs/biome"
