@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.2.3
+
+### Patch Changes
+
+- f0fb6e3: added keywords
+
 ## 0.2.2
 
 ### Patch Changes
