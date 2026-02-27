@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.2.2
+
+### Patch Changes
+
+- 31d718e: actually publish types
+
 ## 0.2.1
 
 ### Patch Changes
