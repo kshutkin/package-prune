@@ -140,3 +140,6 @@ vite.config.ts.timestamp-*
 
 # Mac OS
 .DS_Store
+
+# types
+types

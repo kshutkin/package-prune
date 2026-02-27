@@ -34,7 +34,7 @@ const alwaysIgnoredPatterns = [
 const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb']);
 
 /**
- * @typedef {ReturnType<typeof import('@niceties/logger').createLogger>} Logger
+ * @typedef {import('@niceties/logger').Logger} Logger
  */
 
 /**
@@ -45,9 +45,9 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {string} [main]
  * @property {string|Object.<string, string>} [bin]
  * @property {Array<string>} [files]
- * @property {Object} [directories]
- * @property {Object} [exports]
- * @property {Object} [typesVersions]
+ * @property {Record<string, unknown>} [directories]
+ * @property {Record<string, unknown>} [exports]
+ * @property {Record<string, unknown>} [typesVersions]
  */
 
 /**

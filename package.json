@@ -5,6 +5,14 @@
     "author": "Konstantin Shutkin",
     "bin": "./index.js",
     "type": "module",
+    "types": "./types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./types/index.d.ts",
+            "default": "./prune.js"
+        },
+        "./package.json": "./package.json"
+    },
     "description": "Prune package.json before publish",
     "homepage": "https://github.com/kshutkin/package-prune#readme",
     "bugs": {
@@ -16,6 +24,7 @@
     },
     "main": "prune.js",
     "scripts": {
+        "build": "dts-buddy",
         "lint": "biome lint index.js prune.js",
         "lint:fix": "biome check --write index.js prune.js",
         "ci:publish": "changeset publish",
@@ -28,6 +37,7 @@
         "@niceties/logger": "^1.1.13"
     },
     "devDependencies": {
+        "dts-buddy": "^0.7.0",
         "@biomejs/biome": "2.3.2",
         "@changesets/cli": "2.27.11",
         "@types/node": "^20.14.15",
