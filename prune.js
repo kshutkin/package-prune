@@ -356,15 +356,39 @@ async function flatten(pkg, flatten, logger) {
     const renamePromises = [];
     const newFiles = [];
 
+    /** @type {Map<string, string>} maps new path -> old path */
+    const movedFiles = new Map();
+
     for (const [, info] of distDirInfo) {
         for (const file of info.files) {
             const relativePath = path.relative(info.relativeDistDir, file);
             newFiles.push(relativePath);
+            movedFiles.set(relativePath, file);
             renamePromises.push(rename(file, relativePath));
         }
     }
 
     await Promise.all(renamePromises);
+
+    // adjust sourcemap paths for explicit flatten only
+    // (automatic flatten is safe because the common prefix is derived from package.json references)
+    if (typeof flatten === 'string') {
+        // build reverse map: normalized old path -> new path
+        // so we can fix sources that point to files which themselves moved
+        /** @type {Map<string, string>} */
+        const oldToNew = new Map();
+        for (const [newPath, oldPath] of movedFiles) {
+            oldToNew.set(path.normalize(oldPath), newPath);
+        }
+
+        const sourcemapFiles = newFiles.filter(f => f.endsWith('.map'));
+        for (const newMapPath of sourcemapFiles) {
+            const oldMapPath = movedFiles.get(newMapPath);
+            if (oldMapPath) {
+                await adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew);
+            }
+        }
+    }
 
     // clean up empty source directories
     /** @type {string[]} */
@@ -464,6 +488,51 @@ function cloneAndUpdate(pkg, updater) {
         return clone;
     }
     return pkg;
+}
+
+/**
+ * Adjusts the `sources` (and `sourceRoot`) in a v3 sourcemap file after it has been moved.
+ * Resolves each source against the old location, then makes it relative to the new location.
+ * If a source target was itself moved during flatten, the new location is used instead.
+ * @param {string} newMapPath - The new path of the .map file (relative to project root).
+ * @param {string} oldMapPath - The old path of the .map file (relative to project root).
+ * @param {Map<string, string>} oldToNew - Map from normalized old file paths to their new paths.
+ */
+async function adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew) {
+    const content = await readFile(newMapPath, 'utf8');
+
+    let map;
+    try {
+        map = JSON.parse(content);
+    } catch {
+        return; // not valid JSON, skip
+    }
+
+    if (map.version !== 3 || !Array.isArray(map.sources)) {
+        return;
+    }
+
+    const oldDir = path.dirname(oldMapPath) || '.';
+    const newDir = path.dirname(newMapPath) || '.';
+    const sourceRoot = map.sourceRoot || '';
+
+    map.sources = map.sources.map((/** @type {string} */ source) => {
+        // Resolve source against old map location (incorporating sourceRoot)
+        const resolved = path.normalize(path.join(oldDir, sourceRoot, source));
+        // If the resolved source was itself moved, use its new location
+        const effective = oldToNew.get(resolved) ?? resolved;
+        // Make relative to new map location
+        const newRelative = path.relative(newDir, effective);
+        // Sourcemaps always use forward slashes
+        return newRelative.split(path.sep).join('/');
+    });
+
+    // sourceRoot has been incorporated into the individual source paths
+    if (map.sourceRoot !== undefined) {
+        delete map.sourceRoot;
+    }
+
+    await writeFile(newMapPath, JSON.stringify(map), 'utf8');
 }
 
 /**

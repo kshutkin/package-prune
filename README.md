@@ -120,8 +120,9 @@ pkgprn --flatten dist,lib
 3. Moves all files to the root (preserving subdirectory structure relative to the dist directory).
 4. Removes the now-empty dist directory.
 5. Rewrites all path references in `package.json` to point to the new locations.
-6. Updates the `files` array.
-7. Cleans up any leftover export-map stub directories that only contain a `package.json`.
+6. **Adjusts sourcemap `sources` paths** (explicit directories only) - when `.map` files are moved, their `sources` entries are rewritten so they still resolve to the correct original files. This also handles cross-directory references (e.g. a `.d.ts.map` in `types/` pointing at files in `dist/`) and incorporates any `sourceRoot` into the individual source paths.
+7. Updates the `files` array.
+8. Cleans up any leftover export-map stub directories that only contain a `package.json`.
 
 ## Examples
 
