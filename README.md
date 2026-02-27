@@ -1,6 +1,6 @@
 # package-prune
 
-Prune `package.json` before publishing to npm. Removes `devDependencies`, strips unnecessary scripts, cleans up junk files, optimizes the `files` array, and optionally flattens dist directories — so your published package is lean and clean.
+Prune `package.json` before publishing to npm. Removes `devDependencies`, strips unnecessary scripts, cleans up junk files, optimizes the `files` array, and optionally flattens dist directories - so your published package is lean and clean.
 
 ## Installation
 
@@ -47,12 +47,12 @@ The tool reads the `package.json` in the current working directory, applies all 
 
 By default, `pkgprn` performs the following steps:
 
-1. **Removes `devDependencies`** — Strips the entire `devDependencies` field from `package.json`.
-2. **Removes `packageManager`** — Strips the `packageManager` field.
-3. **Prunes scripts** — Removes scripts that are not relevant to package consumers (based on the selected [profile](#profiles)).
-4. **Removes junk files** — Deletes OS and editor artifacts (`.DS_Store`, `*.orig`, `.*.swp`, `._*`, etc.) from the package directory.
-5. **Optimizes the `files` array** — Collapses individual file entries into their parent directory when all files in that directory are already listed, and removes entries that npm always includes automatically (`package.json`, `README`, `LICENSE`).
-6. **Cleans up unlisted files** — Removes files and directories not covered by the `files` array, then drops the `files` field itself (since only the included files remain on disk).
+1. **Removes `devDependencies`** - Strips the entire `devDependencies` field from `package.json`.
+2. **Removes `packageManager`** - Strips the `packageManager` field.
+3. **Prunes scripts** - Removes scripts that are not relevant to package consumers (based on the selected [profile](#profiles)).
+4. **Removes junk files** - Deletes OS and editor artifacts (`.DS_Store`, `*.orig`, `.*.swp`, `._*`, etc.) from the package directory.
+5. **Optimizes the `files` array** - Collapses individual file entries into their parent directory when all files in that directory are already listed, and removes entries that npm always includes automatically (`package.json`, `README`, `LICENSE`).
+6. **Cleans up unlisted files** - Removes files and directories not covered by the `files` array, then drops the `files` field itself (since only the included files remain on disk).
 
 Additional optional features can be enabled via flags:
 
@@ -193,9 +193,9 @@ await prunePkg(
 
 ### `prunePkg(pkg, options, logger)`
 
-- **`pkg`** — A mutable `package.json` object. Modified in place.
-- **`options`** — An options object matching the CLI flags.
-- **`logger`** — A logger instance (from [`@niceties/logger`](https://www.npmjs.com/package/@niceties/logger)).
+- **`pkg`** - A mutable `package.json` object. Modified in place.
+- **`options`** - An options object matching the CLI flags.
+- **`logger`** - A logger instance (from [`@niceties/logger`](https://www.npmjs.com/package/@niceties/logger)).
 
 ## Ignored Files
 
