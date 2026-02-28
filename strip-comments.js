@@ -1,3 +1,5 @@
+import { decode, encode } from '@jridgewell/sourcemap-codec';
+
 /**
  * @typedef {'jsdoc' | 'license' | 'regular'} CommentType
  */
@@ -7,6 +9,12 @@
  * @property {number} start - Start index in source (inclusive)
  * @property {number} end - End index in source (exclusive)
  * @property {CommentType} type - Classification of the comment
+ */
+
+/**
+ * @typedef {Object} StripResult
+ * @property {string} result - The stripped source text
+ * @property {Int32Array | null} lineMap - Maps 0-based original line → 0-based new line (-1 if removed). null when nothing changed.
  */
 
 const jsExtensions = ['.js', '.mjs', '.cjs'];
@@ -475,14 +483,26 @@ export function parseCommentTypes(value) {
  * @returns {string}
  */
 export function stripComments(source, typesToStrip) {
+    return stripCommentsWithLineMap(source, typesToStrip).result;
+}
+
+/**
+ * Strip comments and return both the stripped source and a line map that
+ * tracks where each original line ended up in the output.
+ *
+ * @param {string} source
+ * @param {Set<CommentType>} typesToStrip
+ * @returns {StripResult}
+ */
+export function stripCommentsWithLineMap(source, typesToStrip) {
     const comments = scanComments(source);
 
-    if (comments.length === 0) return source;
+    if (comments.length === 0) return { result: source, lineMap: null };
 
     // Filter to only the comments we want to remove.
     const toRemove = comments.filter(c => typesToStrip.has(c.type));
 
-    if (toRemove.length === 0) return source;
+    if (toRemove.length === 0) return { result: source, lineMap: null };
 
     // Build output by copying non-removed ranges.
     /** @type {string[]} */
@@ -500,38 +520,212 @@ export function stripComments(source, typesToStrip) {
         parts.push(source.slice(pos));
     }
 
-    let result = parts.join('');
+    let intermediate = parts.join('');
 
-    // Clean up artefacts left behind by comment removal:
-    // 1. Lines that now contain only whitespace → collapse.
-    // 2. Runs of 2+ blank lines → at most 1 blank line.
-    // 3. Leading blank lines (after an optional hashbang) → remove.
+    // --- Build original-line → intermediate-line mapping -------------------
+    // For every original offset, compute how many bytes were removed before it.
+    // Then convert original line-start offsets to intermediate offsets and
+    // derive intermediate line numbers.
 
-    // Trim trailing whitespace from every line (catches spaces left when
-    // a trailing comment is removed, e.g. `const x = 1; // comment`).
-    result = result.replace(/[ \t]+$/gm, '');
+    const origLines = source.split('\n');
+    const origLineCount = origLines.length;
 
-    // Collapse 3+ consecutive newlines (= 2+ blank lines) into 2 newlines
-    // (= 1 blank line). We use a loop-safe regex.
-    result = result.replace(/\n{3,}/g, '\n\n');
+    // Build sorted prefix-sum of removed byte counts for fast lookup.
+    // removedBefore(offset) = total chars removed in ranges fully before offset.
+    // We also detect if an offset falls inside a removed range.
 
-    // Remove leading blank lines (but preserve a hashbang on line 1).
-    if (result.startsWith('#!')) {
-        // Keep the hashbang line, strip blanks after it.
-        const hashbangEnd = result.indexOf('\n');
+    /**
+     * Translate an original offset to an intermediate offset.
+     * Returns -1 if the offset is inside a removed range.
+     * @param {number} offset
+     * @returns {number}
+     */
+    function translateOffset(offset) {
+        let removed = 0;
+        for (const { start, end } of toRemove) {
+            if (offset < start) break;
+            if (offset < end) return -1; // inside removed range
+            removed += end - start;
+        }
+        return offset - removed;
+    }
+
+    // For each original line, figure out which intermediate line it maps to.
+    // An original line maps to -1 if its entire non-whitespace content was
+    // inside removed ranges (i.e. the line becomes blank/whitespace-only).
+    const intermediateText = intermediate;
+    const intermediateLineStarts = buildLineStarts(intermediateText);
+
+    /** @type {Int32Array} */
+    const origToIntermediate = new Int32Array(origLineCount).fill(-1);
+    let origOffset = 0;
+    for (let oi = 0; oi < origLineCount; oi++) {
+        const lineLen = origLines[oi].length;
+        // Check if any content on this line survives.
+        // We try the line-start offset; if it's inside a removed range
+        // the whole beginning is gone, but content may survive later.
+        // The most reliable way: translate the offset of each non-WS char.
+        let survived = false;
+        for (let ci = 0; ci < lineLen; ci++) {
+            const ch = source.charCodeAt(origOffset + ci);
+            // skip whitespace chars — they don't count as surviving content
+            if (ch === 0x20 || ch === 0x09 || ch === 0x0d) continue;
+            const mapped = translateOffset(origOffset + ci);
+            if (mapped !== -1) {
+                survived = true;
+                // Convert intermediate offset to intermediate line number.
+                origToIntermediate[oi] = offsetToLine(intermediateLineStarts, mapped);
+                break;
+            }
+        }
+        if (!survived) {
+            origToIntermediate[oi] = -1;
+        }
+        origOffset += lineLen + 1; // +1 for the '\n' (split removed it)
+    }
+
+    // --- Apply cleanup (same logic as before) ------------------------------
+
+    // Trim trailing whitespace from every line.
+    intermediate = intermediate.replace(/[ \t]+$/gm, '');
+
+    // Collapse 3+ consecutive newlines into 2 newlines.
+    intermediate = intermediate.replace(/\n{3,}/g, '\n\n');
+
+    // Remove leading blank lines (preserve hashbang).
+    if (intermediate.startsWith('#!')) {
+        const hashbangEnd = intermediate.indexOf('\n');
         if (hashbangEnd !== -1) {
-            const before = result.slice(0, hashbangEnd + 1);
-            const after = result.slice(hashbangEnd + 1).replace(/^\n+/, '');
-            result = before + after;
+            const before = intermediate.slice(0, hashbangEnd + 1);
+            const after = intermediate.slice(hashbangEnd + 1).replace(/^\n+/, '');
+            intermediate = before + after;
         }
     } else {
-        result = result.replace(/^\n+/, '');
+        intermediate = intermediate.replace(/^\n+/, '');
     }
 
     // Ensure the file ends with exactly one newline (if it originally did).
-    if (source.endsWith('\n') && result.length > 0) {
-        result = result.replace(/\n*$/, '\n');
+    if (source.endsWith('\n') && intermediate.length > 0) {
+        intermediate = intermediate.replace(/\n*$/, '\n');
     }
 
-    return result;
+    const result = intermediate;
+
+    // --- Build intermediate-line → final-line mapping ----------------------
+    // The cleanup may have removed/collapsed lines from the intermediateText.
+    // We line up intermediateText lines with final lines by content matching.
+    const finalLines = result.split('\n');
+    const intLines = intermediateText.split('\n');
+
+    // Trim trailing WS from intermediate lines to match what cleanup did.
+    const intLinesTrimmed = intLines.map(l => l.replace(/[ \t]+$/, ''));
+
+    /** @type {Int32Array} */
+    const intermediateToFinal = new Int32Array(intLines.length).fill(-1);
+    let fi = 0;
+    for (let ii = 0; ii < intLinesTrimmed.length && fi < finalLines.length; ii++) {
+        if (intLinesTrimmed[ii] === finalLines[fi]) {
+            intermediateToFinal[ii] = fi;
+            fi++;
+        }
+        // else: this intermediate line was removed by cleanup → stays -1
+    }
+
+    // --- Compose: original → intermediate → final --------------------------
+    /** @type {Int32Array} */
+    const lineMap = new Int32Array(origLineCount).fill(-1);
+    for (let oi = 0; oi < origLineCount; oi++) {
+        const il = origToIntermediate[oi];
+        if (il >= 0 && il < intermediateToFinal.length) {
+            lineMap[oi] = intermediateToFinal[il];
+        }
+    }
+
+    return { result, lineMap };
+}
+
+/**
+ * Build an array of line-start offsets for the given text.
+ * `result[i]` is the char offset where line `i` begins (0-based lines).
+ * @param {string} text
+ * @returns {number[]}
+ */
+function buildLineStarts(text) {
+    /** @type {number[]} */
+    const starts = [0];
+    for (let i = 0; i < text.length; i++) {
+        if (text.charCodeAt(i) === 0x0a) {
+            starts.push(i + 1);
+        }
+    }
+    return starts;
+}
+
+/**
+ * Given sorted line-start offsets, find which line a char offset falls on.
+ * @param {number[]} lineStarts
+ * @param {number} offset
+ * @returns {number} 0-based line number
+ */
+function offsetToLine(lineStarts, offset) {
+    // Binary search for the last lineStart <= offset.
+    let lo = 0;
+    let hi = lineStarts.length - 1;
+    while (lo < hi) {
+        const mid = (lo + hi + 1) >>> 1;
+        if (lineStarts[mid] <= offset) {
+            lo = mid;
+        } else {
+            hi = mid - 1;
+        }
+    }
+    return lo;
+}
+
+/**
+ * Adjust a parsed sourcemap (v3) whose `sources` reference a file that had
+ * comments stripped. Updates the original-line numbers in `mappings` for
+ * segments that point at the given source index.
+ *
+ * Segments whose original line maps to -1 (i.e. the line was removed) are
+ * dropped from the output.
+ *
+ * @param {{ version: number, mappings: string, sources?: string[], names?: string[], [k: string]: unknown }} map - Parsed sourcemap object (mutated in place).
+ * @param {number} sourceIndex - Index in `map.sources` of the stripped file.
+ * @param {Int32Array} lineMap - 0-based original line → 0-based new line (-1 if removed).
+ */
+export function adjustSourcemapLineMappings(map, sourceIndex, lineMap) {
+    if (map.version !== 3 || typeof map.mappings !== 'string') return;
+
+    const decoded = decode(map.mappings);
+
+    for (const line of decoded) {
+        // Walk backwards so we can splice without index issues.
+        for (let si = line.length - 1; si >= 0; si--) {
+            const seg = line[si];
+            // Segments with < 4 fields have no source mapping.
+            if (seg.length < 4) continue;
+            const seg4 = /** @type {[number, number, number, number, ...number[]]} */ (seg);
+            // Only adjust segments pointing at the stripped source file.
+            if (seg4[1] !== sourceIndex) continue;
+
+            const origLine = seg4[2]; // 0-based
+            if (origLine < 0 || origLine >= lineMap.length) {
+                // Out of range — drop it.
+                line.splice(si, 1);
+                continue;
+            }
+
+            const newLine = lineMap[origLine];
+            if (newLine === -1) {
+                // The line was removed — drop this segment.
+                line.splice(si, 1);
+                continue;
+            }
+
+            seg4[2] = newLine;
+        }
+    }
+
+    map.mappings = encode(decoded);
 }

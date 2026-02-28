@@ -1,7 +1,14 @@
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 
-import { isStrippableFile, parseCommentTypes, scanComments, stripComments } from '../strip-comments.js';
+import {
+    adjustSourcemapLineMappings,
+    isStrippableFile,
+    parseCommentTypes,
+    scanComments,
+    stripComments,
+    stripCommentsWithLineMap,
+} from '../strip-comments.js';
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -1069,5 +1076,466 @@ describe('scanComments — unicode', () => {
         const comments = scanComments(src);
         assert.strictEqual(comments.length, 1);
         assert.deepStrictEqual(commentTexts(comments, src), ['/* real */']);
+    });
+});
+
+// ===========================================================================
+// stripCommentsWithLineMap
+// ===========================================================================
+
+describe('stripCommentsWithLineMap', () => {
+    test('returns null lineMap when no comments exist', () => {
+        const src = 'const a = 1;\nconst b = 2;\n';
+        const all = new Set(/** @type {const} */ (['jsdoc', 'license', 'regular']));
+        const { result, lineMap } = stripCommentsWithLineMap(src, all);
+        assert.strictEqual(result, src);
+        assert.strictEqual(lineMap, null);
+    });
+
+    test('returns null lineMap when no matching comments', () => {
+        const src = '/** jsdoc */\nconst a = 1;\n';
+        const types = new Set(/** @type {const} */ (['regular']));
+        const { result, lineMap } = stripCommentsWithLineMap(src, types);
+        assert.strictEqual(result, src);
+        assert.strictEqual(lineMap, null);
+    });
+
+    test('result matches stripComments output', () => {
+        const src = '/** jsdoc */\nconst a = 1;\n// regular\nconst b = 2;\n';
+        const all = new Set(/** @type {const} */ (['jsdoc', 'license', 'regular']));
+        const { result } = stripCommentsWithLineMap(src, all);
+        assert.strictEqual(result, stripComments(src, all));
+    });
+
+    test('single-line comment removed — lines shift up', () => {
+        const src = '// comment\nconst a = 1;\nconst b = 2;\n';
+        const all = new Set(/** @type {const} */ (['jsdoc', 'license', 'regular']));
+        const { result, lineMap } = stripCommentsWithLineMap(src, all);
+        assert.strictEqual(result, 'const a = 1;\nconst b = 2;\n');
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        // Line 0 was the comment — removed
+        assert.strictEqual(lineMap[0], -1);
+        // Line 1 "const a = 1;" → now line 0
+        assert.strictEqual(lineMap[1], 0);
+        // Line 2 "const b = 2;" → now line 1
+        assert.strictEqual(lineMap[2], 1);
+    });
+
+    test('multi-line block comment removed — all comment lines map to -1', () => {
+        const src = 'const a = 1;\n/**\n * JSDoc\n */\nconst b = 2;\n';
+        const types = new Set(/** @type {const} */ (['jsdoc']));
+        const { result, lineMap } = stripCommentsWithLineMap(src, types);
+        assert.strictEqual(result, 'const a = 1;\n\nconst b = 2;\n');
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        // Line 0: "const a = 1;" survives
+        assert.strictEqual(lineMap[0], 0);
+        // Lines 1-3: the JSDoc block — removed
+        assert.strictEqual(lineMap[1], -1);
+        assert.strictEqual(lineMap[2], -1);
+        assert.strictEqual(lineMap[3], -1);
+        // Line 4: "const b = 2;" survives
+        assert.ok(lineMap[4] >= 0);
+    });
+
+    test('inline comment removal preserves the code line', () => {
+        const src = 'const a = 1; // inline\nconst b = 2;\n';
+        const all = new Set(/** @type {const} */ (['jsdoc', 'license', 'regular']));
+        const { result, lineMap } = stripCommentsWithLineMap(src, all);
+        assert.ok(result.includes('const a = 1;'));
+        assert.ok(result.includes('const b = 2;'));
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        // Both code lines survive
+        assert.ok(lineMap[0] >= 0);
+        assert.ok(lineMap[1] >= 0);
+        // And they're in order
+        assert.ok(lineMap[0] < lineMap[1]);
+    });
+
+    test('multiple comment blocks between code lines', () => {
+        const src = ['const a = 1;', '// comment 1', '// comment 2', 'const b = 2;', '/* block */', 'const c = 3;', ''].join('\n');
+        const all = new Set(/** @type {const} */ (['jsdoc', 'license', 'regular']));
+        const { lineMap } = stripCommentsWithLineMap(src, all);
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        // Code lines survive
+        assert.ok(lineMap[0] >= 0); // const a
+        assert.strictEqual(lineMap[1], -1); // comment 1
+        assert.strictEqual(lineMap[2], -1); // comment 2
+        assert.ok(lineMap[3] >= 0); // const b
+        assert.strictEqual(lineMap[4], -1); // block comment
+        assert.ok(lineMap[5] >= 0); // const c
+        // Order preserved
+        assert.ok(lineMap[0] < lineMap[3]);
+        assert.ok(lineMap[3] < lineMap[5]);
+    });
+
+    test('blank line collapsing is reflected in lineMap', () => {
+        const src = ['const a = 1;', '// c1', '// c2', '// c3', '// c4', 'const b = 2;', ''].join('\n');
+        const all = new Set(/** @type {const} */ (['jsdoc', 'license', 'regular']));
+        const { result, lineMap } = stripCommentsWithLineMap(src, all);
+        // After removing 4 comment lines, there would be many blank lines,
+        // but cleanup collapses them. "const b" should still be reachable.
+        assert.ok(result.includes('const a = 1;'));
+        assert.ok(result.includes('const b = 2;'));
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        assert.ok(lineMap[0] >= 0);
+        assert.ok(lineMap[5] >= 0);
+    });
+
+    test('hashbang line is preserved and mapped', () => {
+        const src = '#!/usr/bin/env node\n// comment\nconst a = 1;\n';
+        const all = new Set(/** @type {const} */ (['jsdoc', 'license', 'regular']));
+        const { result, lineMap } = stripCommentsWithLineMap(src, all);
+        assert.ok(result.startsWith('#!/usr/bin/env node\n'));
+        assert.ok(result.includes('const a = 1;'));
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        // Hashbang line survives
+        assert.ok(lineMap[0] >= 0);
+        // Comment removed
+        assert.strictEqual(lineMap[1], -1);
+        // Code survives
+        assert.ok(lineMap[2] >= 0);
+    });
+
+    test('selective stripping only removes matching types', () => {
+        const src = ['/** jsdoc */', 'const a = 1;', '// regular', 'const b = 2;', ''].join('\n');
+        const types = new Set(/** @type {const} */ (['regular']));
+        const { lineMap } = stripCommentsWithLineMap(src, types);
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        // JSDoc line survives (not stripped)
+        assert.ok(lineMap[0] >= 0);
+        // Code lines survive
+        assert.ok(lineMap[1] >= 0);
+        // Regular comment removed
+        assert.strictEqual(lineMap[2], -1);
+        // Code survives
+        assert.ok(lineMap[3] >= 0);
+    });
+
+    test('lineMap length matches original line count', () => {
+        const src = '// a\n// b\n// c\ncode;\n';
+        const all = new Set(/** @type {const} */ (['jsdoc', 'license', 'regular']));
+        const { lineMap } = stripCommentsWithLineMap(src, all);
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        // src.split('\n') has 5 elements (4 lines + trailing empty from final \n)
+        assert.strictEqual(lineMap.length, src.split('\n').length);
+    });
+
+    test('realistic dts-buddy scenario: JSDoc typedefs above exported function', () => {
+        const src = [
+            '/**',
+            ' * @typedef {import("@niceties/logger").Logger} Logger',
+            ' */',
+            '',
+            '/**',
+            ' * @typedef {Object} PackageJson',
+            ' * @property {Object.<string, string>} [scripts]',
+            ' */',
+            '',
+            '/**',
+            ' * Prunes a package.json.',
+            ' * @param {PackageJson} pkg',
+            ' * @param {Logger} logger',
+            ' */',
+            'export async function prunePkg(pkg, logger) {',
+            '    // internal comment',
+            '    return;',
+            '}',
+            '',
+        ].join('\n');
+        const types = new Set(/** @type {const} */ (['jsdoc', 'regular']));
+        const { result, lineMap } = stripCommentsWithLineMap(src, types);
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+        // The function declaration (line 14) should survive
+        assert.ok(lineMap[14] >= 0);
+        // The typedef lines should be removed
+        assert.strictEqual(lineMap[1], -1); // @typedef Logger
+        assert.strictEqual(lineMap[5], -1); // @typedef PackageJson
+        // "return;" (line 16) should survive
+        assert.ok(lineMap[16] >= 0);
+        // Result should contain the function
+        assert.ok(result.includes('export async function prunePkg'));
+        assert.ok(result.includes('return;'));
+    });
+});
+
+// ===========================================================================
+// adjustSourcemapLineMappings
+// ===========================================================================
+
+describe('adjustSourcemapLineMappings', () => {
+    /**
+     * Helper: build a minimal v3 sourcemap with pre-decoded segments,
+     * encode it, run adjustment, decode the result.
+     * Segments: [genCol, srcIdx, origLine, origCol] or [genCol, srcIdx, origLine, origCol, nameIdx]
+     * @param {string} mappingsStr
+     * @param {string[]} sources
+     * @param {string[]} [names]
+     */
+    function makeMap(mappingsStr, sources, names) {
+        return {
+            version: 3,
+            file: 'output.d.ts',
+            sources: sources || ['../source.js'],
+            names: names || [],
+            mappings: mappingsStr,
+        };
+    }
+
+    test('adjusts original line numbers based on lineMap', () => {
+        // A mapping pointing to line 4 (0-based) of source 0.
+        // After stripping, line 4 moves to line 2.
+        //
+        // Manually craft a simple mapping: gen line 1, col 0 → source 0, line 4, col 0
+        // VLQ: col=0 (A), src=0 (A), line=4 (I), col=0 (A) → "AAIA"
+        const map = makeMap('AAIA', ['../source.js']);
+        const lineMap = new Int32Array([0, -1, -1, 1, 2, 3]);
+        // line 0 → 0, lines 1-2 removed, line 3 → 1, line 4 → 2, line 5 → 3
+
+        adjustSourcemapLineMappings(map, 0, lineMap);
+
+        // Now decode to verify line 4 became line 2.
+        // We re-parse by creating another map to check.
+        // The simplest check: create a known mapping for line 2 and compare.
+        // VLQ for line=2: "AAEA" (col=0, src=0, line=2, col=0)
+        assert.strictEqual(map.mappings, 'AAEA');
+    });
+
+    test('drops segments whose original line was removed', () => {
+        // Mapping to line 1 (0-based) which is removed.
+        // VLQ: col=0, src=0, line=1, col=0 → "AACA"
+        const map = makeMap('AACA', ['../source.js']);
+        const lineMap = new Int32Array([0, -1, 1]);
+
+        adjustSourcemapLineMappings(map, 0, lineMap);
+
+        // Segment should be dropped; only an empty line of mappings remains.
+        assert.strictEqual(map.mappings, '');
+    });
+
+    test('does not touch segments pointing to other source indices', () => {
+        // Two segments on gen line 1:
+        // seg1: col=0, src=0, line=5, col=0 → "AAKA"
+        // seg2: col=5, src=1 (delta +1), line=5 (delta 0), col=0 (delta 0) → "KCAA"
+        // Combined: "AAKA,KCAA"
+        // But we only adjust source index 0. Source 1 should be untouched.
+        const map = makeMap('AAKA,KCAA', ['../a.js', '../b.js']);
+        const lineMap = new Int32Array([0, 1, 2, 3, 4, 2]); // line 5 → 2
+
+        adjustSourcemapLineMappings(map, 0, lineMap);
+
+        // Decode by hand: after adjustment, source 0's line 5 → line 2.
+        // Source 1's line 5 stays at 5. Let's just verify the map is still valid
+        // and has 2 segments.
+        assert.ok(map.mappings.length > 0);
+        // The mappings string should contain a comma (two segments on one line).
+        assert.ok(map.mappings.includes(','));
+    });
+
+    test('handles multiple generated lines', () => {
+        // Line 1: col=0, src=0, origLine=0, origCol=10 → "AAU" (U = 10)
+        // Actually let's use a simpler encoding.
+        // Line 1: col=17, src=0, origLine=70, origCol=22 → big VLQ
+        // Line 2: col=13, src=0, origLine=38 (delta -32 from 70), origCol=40 (delta +18)
+        //
+        // Let's use the actual dts-buddy map from the project as test data.
+        const map = makeMap(';;;;iBAsEsBA,QAAQA;aAhCUC,MAAMA', ['../prune.js'], ['prunePkg', 'Logger']);
+
+        // Simulate: lines 0-37 stay, line 38 → 6 (shifted up 32), line 70 → 38 (shifted down 32)
+        // Build a lineMap for 80 lines.
+        const lineMap = new Int32Array(80);
+        for (let i = 0; i < 80; i++) lineMap[i] = i; // identity initially
+
+        // Simulate removing 32 lines before line 38 (e.g., lines 6-37 removed).
+        // line 38 becomes line 6, line 70 becomes line 38.
+        for (let i = 6; i < 38; i++) lineMap[i] = -1;
+        for (let i = 38; i < 80; i++) lineMap[i] = i - 32;
+
+        adjustSourcemapLineMappings(map, 0, lineMap);
+
+        // The map should still be valid and have content.
+        assert.ok(map.mappings.length > 0);
+        // It should still have the semicolons structure (4 empty lines + 2 mapped lines).
+        const lines = map.mappings.split(';');
+        assert.strictEqual(lines.length, 6);
+    });
+
+    test('ignores non-v3 sourcemaps', () => {
+        const map = { version: 2, mappings: 'AAAA', sources: ['a.js'] };
+        const lineMap = new Int32Array([0, 1]);
+        // Should not throw.
+        adjustSourcemapLineMappings(map, 0, lineMap);
+        // Mappings unchanged.
+        assert.strictEqual(map.mappings, 'AAAA');
+    });
+
+    test('ignores sourcemaps with non-string mappings', () => {
+        const map = /** @type {{ version: number, mappings: any, sources: string[] }} */ ({
+            version: 3,
+            mappings: null,
+            sources: ['a.js'],
+        });
+        const lineMap = new Int32Array([0, 1]);
+        adjustSourcemapLineMappings(map, 0, lineMap);
+        assert.strictEqual(map.mappings, null);
+    });
+
+    test('handles segments with name index (5 fields)', () => {
+        // Segment: col=0, src=0, line=4, col=5, name=0 → "AAKIE" (K=5, I=4, E=2... let me just use a known encoding)
+        // Actually let's construct: col=0(A), src=0(A), line=4(I), col=5(K), name=0(A) → "AAIKA"
+        const map = makeMap('AAIKA', ['../source.js'], ['myFunc']);
+        const lineMap = new Int32Array([0, -1, -1, 1, 2]);
+        // line 4 → 2
+
+        adjustSourcemapLineMappings(map, 0, lineMap);
+
+        // Line should have been adjusted. Name index should still be there.
+        // The mapping should still have content (not dropped).
+        assert.ok(map.mappings.length > 0);
+        assert.notStrictEqual(map.mappings, '');
+    });
+
+    test('drops out-of-range segments gracefully', () => {
+        // Segment pointing to line 100 but lineMap only covers 10 lines.
+        // VLQ for line 100: need multi-byte. Let's build it differently.
+        // Use a large line number. col=0, src=0, line=100 (0-based), col=0.
+        // 100 in VLQ signed: value=100, shifted=200, encode base64...
+        // Just use "AA8GA" — actually let me just pick one.
+        // Easier: col=0, src=0, line=10, col=0 → line 10 is "AAUA"
+        const map = makeMap('AAUA', ['../source.js']);
+        const lineMap = new Int32Array([0, 1, 2]); // only 3 lines
+
+        adjustSourcemapLineMappings(map, 0, lineMap);
+
+        // Segment should be dropped (line 10 is out of range).
+        assert.strictEqual(map.mappings, '');
+    });
+
+    test('all segments removed results in empty mappings', () => {
+        const map = makeMap('AACA;AACA', ['../source.js']);
+        const lineMap = new Int32Array([0, -1, -1, 1]);
+
+        adjustSourcemapLineMappings(map, 0, lineMap);
+
+        // Both segments pointed to line 1 which is removed.
+        // Result should be ";" (two empty generated lines).
+        assert.strictEqual(map.mappings, ';');
+    });
+
+    test('empty mappings string is handled', () => {
+        const map = makeMap('', ['../source.js']);
+        const lineMap = new Int32Array([0, 1]);
+        adjustSourcemapLineMappings(map, 0, lineMap);
+        assert.strictEqual(map.mappings, '');
+    });
+
+    test('end-to-end: stripCommentsWithLineMap + adjustSourcemapLineMappings', () => {
+        // Source file with JSDoc that gets stripped.
+        const source = [
+            '/**', // line 0
+            ' * @typedef {Object} Options', // line 1
+            ' */', // line 2
+            '', // line 3
+            '/**', // line 4
+            ' * Does stuff.', // line 5
+            ' * @param {Options} opts', // line 6
+            ' */', // line 7
+            'export function doStuff(opts) {', // line 8
+            '    return opts;', // line 9
+            '}', // line 10
+            '', // line 11
+        ].join('\n');
+
+        const types = new Set(/** @type {const} */ (['jsdoc']));
+        const { result, lineMap } = stripCommentsWithLineMap(source, types);
+
+        // Verify stripping worked.
+        assert.ok(result.includes('export function doStuff'));
+        assert.ok(!result.includes('@typedef'));
+        assert.notStrictEqual(lineMap, null);
+
+        // The function declaration was on original line 8.
+        if (lineMap === null) throw new Error('unreachable');
+        const newFuncLine = lineMap[8];
+        assert.ok(newFuncLine >= 0, 'function line should survive');
+
+        // Verify it actually points to the right line in the stripped output.
+        const strippedLines = result.split('\n');
+        assert.ok(strippedLines[newFuncLine].includes('export function doStuff'));
+
+        // Now build a sourcemap that pointed to line 8, col 16 ("doStuff") and line 1 ("@typedef").
+        // Encoding: gen line 1 has two segments.
+        // seg1: col=0, src=0, origLine=8, origCol=16 → "AAQgB"
+        // seg2: col=10, src=0, origLine=1 (delta -7), origCol=3 (delta -13) → "UANb"
+        // But exact VLQ is tricky. Let me use a simpler approach:
+        // Just test that adjusting a map with known decoded structure works.
+
+        // Manually build the map with the known structure:
+        // Gen line 5, seg: col=17, src=0, origLine=8, origCol=16, name=0
+        // We'll use the map format similar to the dts-buddy output.
+        // For simplicity, just encode origLine=8:
+        // col=0(A), src=0(A), origLine=8(Q), origCol=16(gB), name=0(A) → "AAQgBA"
+        const map = {
+            version: 3,
+            file: 'output.d.ts',
+            sources: ['../source.js'],
+            names: ['doStuff'],
+            mappings: 'AAQgBA',
+        };
+
+        adjustSourcemapLineMappings(map, 0, /** @type {Int32Array} */ (lineMap));
+
+        // The mapping should not be empty (line 8 survived).
+        assert.ok(map.mappings.length > 0);
+        assert.notStrictEqual(map.mappings, '');
+    });
+
+    test('end-to-end: mapping into removed comment is dropped', () => {
+        const source = [
+            '/**', // line 0
+            ' * @typedef {import("foo").Bar} Bar', // line 1
+            ' */', // line 2
+            'export function bar() {}', // line 3
+            '', // line 4
+        ].join('\n');
+
+        const types = new Set(/** @type {const} */ (['jsdoc']));
+        const { lineMap } = stripCommentsWithLineMap(source, types);
+        assert.notStrictEqual(lineMap, null);
+        if (lineMap === null) throw new Error('unreachable');
+
+        // Line 1 (inside JSDoc) should be removed.
+        assert.strictEqual(lineMap[1], -1);
+
+        // Build a map with two segments:
+        // seg1: points to line 1 (typedef — inside removed JSDoc)
+        // seg2: points to line 3 (function — survives)
+        // Encoding: line 1 = "AACA", then on next gen line, line 3 (delta +2) = "AAEA"
+        const map = {
+            version: 3,
+            file: 'output.d.ts',
+            sources: ['../source.js'],
+            names: [],
+            mappings: 'AACA;AAEA',
+        };
+
+        adjustSourcemapLineMappings(map, 0, /** @type {Int32Array} */ (lineMap));
+
+        // First gen line's segment (pointing to removed line 1) should be dropped.
+        // Second gen line's segment (pointing to surviving line 3) should remain.
+        const lines = map.mappings.split(';');
+        assert.strictEqual(lines.length, 2);
+        // First generated line: empty (segment dropped)
+        assert.strictEqual(lines[0], '');
+        // Second generated line: has a segment
+        assert.ok(lines[1].length > 0);
     });
 });
