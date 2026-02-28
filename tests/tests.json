@@ -535,7 +535,7 @@
             "name": "explicit flatten adjusts sourcemap sources",
             "args": "--flatten=dist --optimize-files=false --cleanup-files=false",
             "input": "dist\n  index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\n  index.js.map\n|{\"version\":3,\"sources\":[\"../src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\nsrc\n  index.ts\n|console.log(\"hello\")\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"src\"\n|  ]\n|}",
-            "output": "index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\nindex.js.map\n|{\"version\":3,\"sources\":[\"src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.js.map\"\n|  ]\n|}\n|\nsrc\n  index.ts\n|console.log(\"hello\")",
+            "output": "index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\nindex.js.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"src/index.ts\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.js.map\"\n|  ]\n|}\n|\nsrc\n  index.ts\n|console.log(\"hello\")",
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
             "stderr": "",
             "exitCode": 0
@@ -545,7 +545,7 @@
             "name": "explicit flatten adjusts sourcemap with sourceRoot",
             "args": "--flatten=dist --optimize-files=false --cleanup-files=false",
             "input": "dist\n  index.js\n|code\n  index.js.map\n|{\"version\":3,\"sourceRoot\":\"../src/\",\"sources\":[\"index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\nsrc\n  index.ts\n|source\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"src\"\n|  ]\n|}",
-            "output": "index.js\n|code\nindex.js.map\n|{\"version\":3,\"sources\":[\"src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.js.map\"\n|  ]\n|}\n|\nsrc\n  index.ts\n|source",
+            "output": "index.js\n|code\nindex.js.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"src/index.ts\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.js.map\"\n|  ]\n|}\n|\nsrc\n  index.ts\n|source",
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
             "stderr": "",
             "exitCode": 0
@@ -555,7 +555,7 @@
             "name": "explicit flatten adjusts sourcemap in nested dir",
             "args": "--flatten=dist --optimize-files=false --cleanup-files=false",
             "input": "dist\n  sub\n    deep.js\n|code\n    deep.js.map\n|{\"version\":3,\"sources\":[\"../../src/deep.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\nsrc\n  deep.ts\n|source\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/sub/deep.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"src\"\n|  ]\n|}",
-            "output": "package.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./sub/deep.js\",\n|  \"files\": [\n|    \"sub/deep.js\",\n|    \"sub/deep.js.map\"\n|  ]\n|}\n|\nsrc\n  deep.ts\n|source\nsub\n  deep.js\n|code\n  deep.js.map\n|{\"version\":3,\"sources\":[\"../src/deep.ts\"],\"names\":[],\"mappings\":\"AAAA\"}",
+            "output": "package.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./sub/deep.js\",\n|  \"files\": [\n|    \"sub/deep.js\",\n|    \"sub/deep.js.map\"\n|  ]\n|}\n|\nsrc\n  deep.ts\n|source\nsub\n  deep.js\n|code\n  deep.js.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"../src/deep.ts\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|",
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
             "stderr": "",
             "exitCode": 0
@@ -565,7 +565,7 @@
             "name": "explicit flatten adjusts sourcemaps from multiple dirs",
             "args": "--flatten=dist1,dist2 --optimize-files=false --cleanup-files=false",
             "input": "dist1\n  a.js\n|code a\n  a.js.map\n|{\"version\":3,\"sources\":[\"../src/a.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\ndist2\n  b.js\n|code b\n  b.js.map\n|{\"version\":3,\"sources\":[\"../src/b.ts\"],\"names\":[],\"mappings\":\"BBBB\"}\nsrc\n  a.ts\n|source a\n  b.ts\n|source b\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist1/a.js\",\n|  \"module\": \"./dist2/b.js\",\n|  \"files\": [\n|    \"dist1\",\n|    \"dist2\",\n|    \"src\"\n|  ]\n|}",
-            "output": "a.js\n|code a\na.js.map\n|{\"version\":3,\"sources\":[\"src/a.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\nb.js\n|code b\nb.js.map\n|{\"version\":3,\"sources\":[\"src/b.ts\"],\"names\":[],\"mappings\":\"BBBB\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./a.js\",\n|  \"module\": \"./b.js\",\n|  \"files\": [\n|    \"a.js\",\n|    \"a.js.map\",\n|    \"b.js\",\n|    \"b.js.map\"\n|  ]\n|}\n|\nsrc\n  a.ts\n|source a\n  b.ts\n|source b",
+            "output": "a.js\n|code a\na.js.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"src/a.ts\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|\nb.js\n|code b\nb.js.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"src/b.ts\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"BBBB\"\n|}\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./a.js\",\n|  \"module\": \"./b.js\",\n|  \"files\": [\n|    \"a.js\",\n|    \"a.js.map\",\n|    \"b.js\",\n|    \"b.js.map\"\n|  ]\n|}\n|\nsrc\n  a.ts\n|source a\n  b.ts\n|source b",
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist1, dist2...\n",
             "stderr": "",
             "exitCode": 0
@@ -585,7 +585,7 @@
             "name": "explicit flatten with multiple sources in one sourcemap",
             "args": "--flatten=dist --optimize-files=false --cleanup-files=false",
             "input": "dist\n  bundle.js\n|code\n  bundle.js.map\n|{\"version\":3,\"sources\":[\"../src/a.ts\",\"../src/b.ts\",\"../lib/util.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\nsrc\n  a.ts\n|a\n  b.ts\n|b\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/bundle.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"src\"\n|  ]\n|}",
-            "output": "bundle.js\n|code\nbundle.js.map\n|{\"version\":3,\"sources\":[\"src/a.ts\",\"src/b.ts\",\"lib/util.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./bundle.js\",\n|  \"files\": [\n|    \"bundle.js\",\n|    \"bundle.js.map\"\n|  ]\n|}\n|\nsrc\n  a.ts\n|a\n  b.ts\n|b",
+            "output": "bundle.js\n|code\nbundle.js.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"src/a.ts\",\n|    \"src/b.ts\",\n|    \"lib/util.ts\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./bundle.js\",\n|  \"files\": [\n|    \"bundle.js\",\n|    \"bundle.js.map\"\n|  ]\n|}\n|\nsrc\n  a.ts\n|a\n  b.ts\n|b",
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
             "stderr": "",
             "exitCode": 0
@@ -595,7 +595,7 @@
             "name": "explicit flatten cross-directory sourcemap (types map pointing at dist)",
             "args": "--flatten=dist,types --optimize-files=false --cleanup-files=false",
             "input": "dist\n  index.js\n|code\ntypes\n  index.d.ts\n|declare const x: number;\n  index.d.ts.map\n|{\"version\":3,\"sources\":[\"../dist/index.js\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"types\": \"./types/index.d.ts\",\n|  \"files\": [\n|    \"dist\",\n|    \"types\"\n|  ]\n|}",
-            "output": "index.d.ts\n|declare const x: number;\nindex.d.ts.map\n|{\"version\":3,\"sources\":[\"index.js\"],\"names\":[],\"mappings\":\"AAAA\"}\nindex.js\n|code\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"types\": \"./index.d.ts\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.d.ts\",\n|    \"index.d.ts.map\"\n|  ]\n|}\n|",
+            "output": "index.d.ts\n|declare const x: number;\nindex.d.ts.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"index.js\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|\nindex.js\n|code\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"types\": \"./index.d.ts\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.d.ts\",\n|    \"index.d.ts.map\"\n|  ]\n|}\n|",
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist, types...\n",
             "stderr": "",
             "exitCode": 0
@@ -605,7 +605,7 @@
             "name": "explicit flatten cross-directory sourcemap nested subdirs",
             "args": "--flatten=dist,types --optimize-files=false --cleanup-files=false",
             "input": "dist\n  sub\n    a.js\n|code\ntypes\n  sub\n    a.d.ts\n|declare const a: number;\n    a.d.ts.map\n|{\"version\":3,\"sources\":[\"../../dist/sub/a.js\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/sub/a.js\",\n|  \"types\": \"./types/sub/a.d.ts\",\n|  \"files\": [\n|    \"dist\",\n|    \"types\"\n|  ]\n|}",
-            "output": "package.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./sub/a.js\",\n|  \"types\": \"./sub/a.d.ts\",\n|  \"files\": [\n|    \"sub/a.js\",\n|    \"sub/a.d.ts\",\n|    \"sub/a.d.ts.map\"\n|  ]\n|}\n|\nsub\n  a.d.ts\n|declare const a: number;\n  a.d.ts.map\n|{\"version\":3,\"sources\":[\"a.js\"],\"names\":[],\"mappings\":\"AAAA\"}\n  a.js\n|code",
+            "output": "package.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./sub/a.js\",\n|  \"types\": \"./sub/a.d.ts\",\n|  \"files\": [\n|    \"sub/a.js\",\n|    \"sub/a.d.ts\",\n|    \"sub/a.d.ts.map\"\n|  ]\n|}\n|\nsub\n  a.d.ts\n|declare const a: number;\n  a.d.ts.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"a.js\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|\n  a.js\n|code",
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist, types...\n",
             "stderr": "",
             "exitCode": 0
@@ -615,7 +615,7 @@
             "name": "explicit flatten cross-directory sourcemap mixed moved and unmoved sources",
             "args": "--flatten=dist,types --optimize-files=false --cleanup-files=false",
             "input": "dist\n  index.js\n|code\nsrc\n  index.ts\n|source\ntypes\n  index.d.ts\n|declare const x: number;\n  index.d.ts.map\n|{\"version\":3,\"sources\":[\"../dist/index.js\",\"../src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"types\": \"./types/index.d.ts\",\n|  \"files\": [\n|    \"dist\",\n|    \"types\",\n|    \"src\"\n|  ]\n|}",
-            "output": "index.d.ts\n|declare const x: number;\nindex.d.ts.map\n|{\"version\":3,\"sources\":[\"index.js\",\"src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\nindex.js\n|code\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"types\": \"./index.d.ts\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.d.ts\",\n|    \"index.d.ts.map\"\n|  ]\n|}\n|\nsrc\n  index.ts\n|source",
+            "output": "index.d.ts\n|declare const x: number;\nindex.d.ts.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"index.js\",\n|    \"src/index.ts\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|\nindex.js\n|code\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"types\": \"./index.d.ts\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.d.ts\",\n|    \"index.d.ts.map\"\n|  ]\n|}\n|\nsrc\n  index.ts\n|source",
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist, types...\n",
             "stderr": "",
             "exitCode": 0

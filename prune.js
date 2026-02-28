@@ -532,7 +532,7 @@ async function adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew) {
         delete map.sourceRoot;
     }
 
-    await writeFile(newMapPath, JSON.stringify(map), 'utf8');
+    await writeFile(newMapPath, JSON.stringify(map, null, 2) + '\n', 'utf8');
 }
 
 /**
