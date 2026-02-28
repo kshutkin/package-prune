@@ -16,7 +16,7 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * @param {import('../strip-comments.js').CommentRange[]} comments
+ * @param {import('../src/strip-comments.js').CommentRange[]} comments
  * @param {string} source
  */
 function commentTexts(comments, source) {
@@ -24,7 +24,7 @@ function commentTexts(comments, source) {
 }
 
 /**
- * @param {import('../strip-comments.js').CommentRange[]} comments
+ * @param {import('../src/strip-comments.js').CommentRange[]} comments
  */
 function commentTypes(comments) {
     return comments.map(c => c.type);
@@ -662,14 +662,14 @@ describe('scanComments — edge cases', () => {
 describe('stripComments', () => {
     test('strip all comments', () => {
         const src = '/** jsdoc */\n/* regular */\n// line\nconst a = 1;\n';
-        const all = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
+        const all = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
         const result = stripComments(src, all);
         assert.strictEqual(result, 'const a = 1;\n');
     });
 
     test('strip only jsdoc', () => {
         const src = '/** jsdoc */\n/* regular */\nconst a = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         assert.ok(result.includes('/* regular */'));
         assert.ok(!result.includes('/** jsdoc */'));
@@ -678,7 +678,7 @@ describe('stripComments', () => {
 
     test('strip only license', () => {
         const src = '/*! license */\n/** jsdoc */\nconst a = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['license']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['license']));
         const result = stripComments(src, types);
         assert.ok(!result.includes('/*! license */'));
         assert.ok(result.includes('/** jsdoc */'));
@@ -687,7 +687,7 @@ describe('stripComments', () => {
 
     test('strip only regular', () => {
         const src = '/** jsdoc */\n/* regular */\n// line\nconst a = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['regular']));
         const result = stripComments(src, types);
         assert.ok(result.includes('/** jsdoc */'));
         assert.ok(!result.includes('/* regular */'));
@@ -697,7 +697,7 @@ describe('stripComments', () => {
 
     test('strip jsdoc and regular but keep license', () => {
         const src = '/*! license */\n/** jsdoc */\n/* regular */\n// line\nconst a = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc', 'regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'regular']));
         const result = stripComments(src, types);
         assert.ok(result.includes('/*! license */'));
         assert.ok(!result.includes('/** jsdoc */'));
@@ -708,26 +708,26 @@ describe('stripComments', () => {
 
     test('returns source unchanged when no comments match', () => {
         const src = 'const a = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         assert.strictEqual(stripComments(src, types), src);
     });
 
     test('returns source unchanged when no comments exist', () => {
         const src = 'const a = 1;\nconst b = 2;\n';
-        const all = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
+        const all = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
         assert.strictEqual(stripComments(src, all), src);
     });
 
     test('inline comment removal does not break code', () => {
         const src = 'const x = /* type */ 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['regular']));
         const result = stripComments(src, types);
         assert.strictEqual(result, 'const x =  1;\n');
     });
 
     test('trailing single-line comment removal', () => {
         const src = 'const x = 1; // comment\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['regular']));
         const result = stripComments(src, types);
         assert.strictEqual(result, 'const x = 1;\n');
     });
@@ -740,7 +740,7 @@ describe('stripComments', () => {
 describe('stripComments — whitespace cleanup', () => {
     test('collapses multiple blank lines left by removal', () => {
         const src = 'a();\n\n/**\n * jsdoc\n */\n\nb();\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         // Should have at most one blank line between a() and b()
         assert.ok(!result.includes('\n\n\n'), 'should not have 3+ consecutive newlines');
@@ -750,14 +750,14 @@ describe('stripComments — whitespace cleanup', () => {
 
     test('removes leading blank lines after stripping top comment', () => {
         const src = '/** module doc */\nconst a = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         assert.strictEqual(result, 'const a = 1;\n');
     });
 
     test('preserves hashbang and removes blank lines after it', () => {
         const src = '#!/usr/bin/env node\n/** jsdoc */\nconst a = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         assert.ok(result.startsWith('#!/usr/bin/env node\n'));
         assert.ok(result.includes('const a = 1;'));
@@ -766,7 +766,7 @@ describe('stripComments — whitespace cleanup', () => {
 
     test('preserves trailing newline if original had one', () => {
         const src = '/* comment */\nconst a = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['regular']));
         const result = stripComments(src, types);
         assert.ok(result.endsWith('\n'));
         assert.ok(!result.endsWith('\n\n'));
@@ -774,7 +774,7 @@ describe('stripComments — whitespace cleanup', () => {
 
     test('whitespace-only lines from indented comments are cleaned up', () => {
         const src = '    /** jsdoc */\n    function f() {}\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         // The line that had only the jsdoc and indentation should be collapsed
         assert.ok(!result.includes('    \n'), 'should not have whitespace-only lines');
@@ -782,7 +782,7 @@ describe('stripComments — whitespace cleanup', () => {
 
     test('multiple consecutive jsdoc blocks collapse cleanly', () => {
         const src = '/**\n * A\n */\n/**\n * B\n */\nfunction f() {}\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         assert.strictEqual(result, 'function f() {}\n');
     });
@@ -795,7 +795,7 @@ describe('stripComments — whitespace cleanup', () => {
 describe('stripComments — content preservation', () => {
     test('strings with comment-like content are preserved', () => {
         const src = "const a = '/* not removed */';\n/** jsdoc */\nconst b = 1;\n";
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         assert.ok(result.includes("'/* not removed */'"));
         assert.ok(!result.includes('/** jsdoc */'));
@@ -803,7 +803,7 @@ describe('stripComments — content preservation', () => {
 
     test('template literals with comment-like content are preserved', () => {
         const src = 'const a = `/* not removed */`;\n/** jsdoc */\nconst b = 1;\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         assert.ok(result.includes('`/* not removed */`'));
         assert.ok(!result.includes('/** jsdoc */'));
@@ -811,7 +811,7 @@ describe('stripComments — content preservation', () => {
 
     test('regex with comment-like content is preserved', () => {
         const src = 'const re = /\\/*\\//; /** jsdoc */\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         assert.ok(result.includes('/\\/*\\//'));
         assert.ok(!result.includes('/** jsdoc */'));
@@ -819,19 +819,19 @@ describe('stripComments — content preservation', () => {
 
     test('preserves code between comments', () => {
         const src = '/* a */\nconst x = 1;\n/* b */\nconst y = 2;\n/* c */\n';
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['regular']));
         const result = stripComments(src, types);
         assert.ok(result.includes('const x = 1;'));
         assert.ok(result.includes('const y = 2;'));
     });
 
     test('empty source stays empty', () => {
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
         assert.strictEqual(stripComments('', types), '');
     });
 
     test('source with only a comment becomes empty (or single newline)', () => {
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['regular']));
         const result = stripComments('/* only comment */\n', types);
         assert.strictEqual(result.trim(), '');
     });
@@ -860,7 +860,7 @@ describe('stripComments — realistic code', () => {
         ].join('\n');
 
         // Strip only jsdoc — keep license, line comments, inline comments
-        const jsdocOnly = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const jsdocOnly = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const r1 = stripComments(src, jsdocOnly);
         assert.ok(r1.includes('/*! MIT License */'), 'license kept');
         assert.ok(r1.includes('// say hello'), 'line comment kept');
@@ -871,7 +871,7 @@ describe('stripComments — realistic code', () => {
         assert.ok(r1.includes('`Hello, ${name}!`'), 'template literal preserved');
 
         // Strip all
-        const all = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
+        const all = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
         const r2 = stripComments(src, all);
         assert.ok(!r2.includes('/*'), 'no block comments');
         assert.ok(!r2.includes('//'), 'no line comments (except hashbang)');
@@ -889,7 +889,7 @@ describe('stripComments — realistic code', () => {
             '',
         ].join('\n');
 
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc', 'regular']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'regular']));
         const result = stripComments(src, types);
         assert.ok(!result.includes('/** @module math */'));
         assert.ok(!result.includes('// aspect ratio'));
@@ -912,7 +912,7 @@ describe('stripComments — realistic code', () => {
             '',
         ].join('\n');
 
-        const types = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc']));
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc']));
         const result = stripComments(src, types);
         assert.ok(!result.includes('/**'));
         assert.ok(result.includes('name: string;'));
@@ -932,7 +932,7 @@ describe('stripComments — realistic code', () => {
             '',
         ].join('\n');
 
-        const all = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
+        const all = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
         const result = stripComments(src, all);
         assert.ok(!result.includes('/** doc */'));
         assert.ok(!result.includes('// map each item'));
@@ -944,7 +944,7 @@ describe('stripComments — realistic code', () => {
 
     test('minified code with no whitespace around comments', () => {
         const src = 'var a=1;/* x */var b=2;/** y */var c=3;// z\nvar d=4;';
-        const all = new Set(/** @type {import('../strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
+        const all = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'license', 'regular']));
         const result = stripComments(src, all);
         assert.ok(result.includes('var a=1;'));
         assert.ok(result.includes('var b=2;'));
