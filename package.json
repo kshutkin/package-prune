@@ -1,6 +1,6 @@
 {
     "name": "pkgprn",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "license": "MIT",
     "author": "Konstantin Shutkin",
     "bin": "./src/index.js",
