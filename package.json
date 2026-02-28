@@ -3,13 +3,13 @@
     "version": "0.4.1",
     "license": "MIT",
     "author": "Konstantin Shutkin",
-    "bin": "./index.js",
+    "bin": "./src/index.js",
     "type": "module",
     "types": "./types/index.d.ts",
     "exports": {
         ".": {
             "types": "./types/index.d.ts",
-            "default": "./prune.js"
+            "default": "./src/prune.js"
         },
         "./package.json": "./package.json"
     },
@@ -29,24 +29,23 @@
         "type": "git",
         "url": "git+https://github.com/kshutkin/package-prune.git"
     },
-    "main": "prune.js",
+    "main": "src/prune.js",
     "scripts": {
         "build": "dts-buddy",
-        "lint": "biome lint index.js prune.js strip-comments.js",
-        "lint:fix": "biome check --write index.js prune.js strip-comments.js",
+        "lint": "biome lint src/index.js src/prune.js src/strip-comments.js src/extract-references.js",
+        "lint:fix": "biome check --write src/index.js src/prune.js src/strip-comments.js src/extract-references.js",
         "ci:publish": "changeset publish",
-        "prepack": "node ./index.js --flatten=types",
-        "test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env --test ./tests/test.js ./tests/strip-comments.test.js"
+        "prepack": "node ./src/index.js --flatten=types",
+        "test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env --test ./tests/*.test.js"
     },
     "files": [
         "types",
-        "strip-comments.js"
+        "src"
     ],
     "dependencies": {
         "@jridgewell/sourcemap-codec": "^1.5.5",
         "@niceties/logger": "^1.1.13",
-        "cleye": "2.2.1",
-        "jsonata": "^2.1.0"
+        "cleye": "2.2.1"
     },
     "devDependencies": {
         "@biomejs/biome": "2.4.4",

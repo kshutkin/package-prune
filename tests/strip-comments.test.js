@@ -1,3 +1,4 @@
+/* biome-ignore-all lint/suspicious/noTemplateCurlyInString: test strings intentionally contain template expressions */
 import assert from 'node:assert';
 import { describe, test } from 'node:test';
 
@@ -8,7 +9,7 @@ import {
     scanComments,
     stripComments,
     stripCommentsWithLineMap,
-} from '../strip-comments.js';
+} from '../src/strip-comments.js';
 
 // ---------------------------------------------------------------------------
 // helpers

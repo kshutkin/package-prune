@@ -143,7 +143,7 @@
         {
             "id": 17,
             "name": "2 dist folders (flatten both separately)",
-            "args": "--flatten=dist && node ../../index.js --flatten=dist2",
+            "args": "--flatten=dist && node ../../src/index.js --flatten=dist2",
             "input": "dist\n  index.js\n|\ndist2\n  index2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"module\": \"./dist2/index2.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "index.js\n|\nindex2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"module\": \"./index2.js\"\n|}\n|",
             "stdout": "preparing..\n\nflattening dist...\npreparing..\n\nflattening dist2...\n",

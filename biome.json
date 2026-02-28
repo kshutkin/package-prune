@@ -54,18 +54,6 @@
             "lineWidth": 140
         }
     },
-    "overrides": [
-        {
-            "includes": ["tests/strip-comments.test.js"],
-            "linter": {
-                "rules": {
-                    "suspicious": {
-                        "noTemplateCurlyInString": "off"
-                    }
-                }
-            }
-        }
-    ],
     "vcs": {
         "enabled": true,
         "clientKind": "git",

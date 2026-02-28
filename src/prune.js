@@ -1,6 +1,7 @@
 import { access, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { extractReferences } from './extract-references.js';
 import { adjustSourcemapLineMappings, isStrippableFile, parseCommentTypes, stripCommentsWithLineMap } from './strip-comments.js';
 
 /**
@@ -270,12 +271,9 @@ export async function prunePkg(pkg, options, logger) {
  * @param {Logger} logger
  */
 async function flatten(pkg, flatten, logger) {
-    const { default: jsonata } = await import('jsonata');
-
     // find out where is the dist folder
 
-    const expression = jsonata('[bin, bin.*, main, module, unpkg, umd, types, typings, exports[].*.*, typesVersions.*.*, directories.bin]');
-    const allReferences = await expression.evaluate(pkg);
+    const allReferences = extractReferences(pkg);
 
     /** @type {string[]} */
     let distDirs;
