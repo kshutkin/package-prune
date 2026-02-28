@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.4.1
+
+### Patch Changes
+
+- f33df2b: fix bug in isSubDirectory
+
 ## 0.4.0
 
 ### Minor Changes
