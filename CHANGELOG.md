@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.5.2
+
+### Patch Changes
+
+- 215c359: strip comments
+
 ## 0.5.1
 
 ### Patch Changes
