@@ -43,6 +43,11 @@ try {
                 description: 'remove sourcemaps',
                 default: false,
             },
+            stripComments: {
+                type: StripCommentsParam,
+                description: 'strip comments: all (default), jsdoc, license, regular (comma-separated)',
+                default: false,
+            },
             optimizeFiles: {
                 type: Boolean,
                 description: 'optimize files array',
@@ -97,6 +102,16 @@ async function readPackage(dir) {
  */
 async function writePackage(pkg) {
     await writeFile('./package.json', `${JSON.stringify(pkg, null, 2)}\n`);
+}
+
+/**
+ * @param {string | false} value
+ */
+function StripCommentsParam(value) {
+    if (value === '') {
+        return 'all';
+    }
+    return value;
 }
 
 /**

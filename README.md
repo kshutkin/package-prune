@@ -58,18 +58,20 @@ Additional optional features can be enabled via flags:
 
 - **Flatten** dist directories into the package root.
 - **Remove sourcemaps** and their `//# sourceMappingURL=` references.
+- **Strip comments** from JavaScript files, with automatic sourcemap line-mapping adjustment.
 
 ## Options
 
-| Flag                  | Type                | Default   | Description                                                                                                                    |
-| --------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `--profile`           | `string`            | `library` | Script-retention profile (`library` or `app`).                                                                                 |
-| `--flatten`           | `string \| boolean` | `false`   | Flatten dist directories to the package root. Pass without a value to auto-detect, or provide comma-separated directory names. |
-| `--remove-sourcemaps` | `boolean`           | `false`   | Delete `.map` files and strip `sourceMappingURL` comments from source files.                                                   |
-| `--optimize-files`    | `boolean`           | `true`    | Optimize the `files` array by collapsing entries.                                                                              |
-| `--cleanup-files`     | `boolean`           | `true`    | Remove files not listed in the `files` array.                                                                                  |
-| `--version`           |                     |           | Show version number.                                                                                                           |
-| `--help`              |                     |           | Show help message.                                                                                                             |
+| Flag                  | Type                | Default   | Description                                                                                                                       |
+| --------------------- | ------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `--profile`           | `string`            | `library` | Script-retention profile (`library` or `app`).                                                                                    |
+| `--flatten`           | `string \| boolean` | `false`   | Flatten dist directories to the package root. Pass without a value to auto-detect, or provide comma-separated directory names.    |
+| `--remove-sourcemaps` | `boolean`           | `false`   | Delete `.map` files and strip `sourceMappingURL` comments from source files.                                                      |
+| `--strip-comments`    | `string \| boolean` | `false`   | Strip comments from JS files. Pass without a value to strip all, or provide comma-separated types: `jsdoc`, `license`, `regular`. |
+| `--optimize-files`    | `boolean`           | `true`    | Optimize the `files` array by collapsing entries.                                                                                 |
+| `--cleanup-files`     | `boolean`           | `true`    | Remove files not listed in the `files` array.                                                                                     |
+| `--version`           |                     |           | Show version number.                                                                                                              |
+| `--help`              |                     |           | Show help message.                                                                                                                |
 
 ## Profiles
 
@@ -124,6 +126,32 @@ pkgprn --flatten dist,lib
 7. Updates the `files` array.
 8. Cleans up any leftover export-map stub directories that only contain a `package.json`.
 
+## Comment Stripping
+
+The `--strip-comments` flag removes comments from `.js`, `.mjs`, and `.cjs` files. You can target specific comment types or strip them all at once.
+
+### Usage
+
+```sh
+pkgprn --strip-comments            # strip all comments
+pkgprn --strip-comments jsdoc      # strip only JSDoc comments
+pkgprn --strip-comments license,regular  # strip license and regular comments
+```
+
+### Comment types
+
+| Type      | Description                                        |
+| --------- | -------------------------------------------------- |
+| `jsdoc`   | `/** … */` documentation comments                  |
+| `license` | Comments containing "license", "copyright", or "©" |
+| `regular` | All other `//` and `/* … */` comments              |
+
+Passing `--strip-comments` without a value (or with `all`) strips every type.
+
+### Sourcemap adjustment
+
+When comments are stripped, line numbers in the affected files change. If any `.d.ts.map` files reference a stripped JS file in their `sources`, `pkgprn` automatically rewrites the sourcemap `mappings` so that line numbers stay correct. This ensures that declaration-map "Go to Definition" navigation continues to point to the right lines after comment removal.
+
 ## Examples
 
 ### Basic library
@@ -156,6 +184,19 @@ After packing, `build` and `test` are removed; `devDependencies` and `packageMan
 
 After packing, `dist/index.js` becomes `index.js`, `main` points to `index.js`, and the `dist` directory is gone.
 
+### Library with comment stripping
+
+```json
+{
+    "scripts": {
+        "build": "tsc",
+        "prepack": "pkgprn --strip-comments jsdoc"
+    }
+}
+```
+
+After packing, all JSDoc comments are removed from JS files and any `.d.ts.map` sourcemaps are adjusted to reflect the new line numbers.
+
 ### Application with sourcemap removal
 
 ```sh
@@ -185,6 +226,7 @@ await prunePkg(
         profile: "library",
         flatten: false,
         removeSourcemaps: false,
+        stripComments: false, // or "all", "jsdoc", "license,regular", etc.
         optimizeFiles: true,
         cleanupFiles: true,
     },
