@@ -592,7 +592,8 @@ async function adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew) {
  * @returns {boolean}
  */
 function isSubDirectory(parent, child) {
-    return path.relative(child, parent).startsWith('..');
+    const rel = path.relative(parent, child);
+    return rel !== '' && !rel.startsWith('..');
 }
 
 /**
