@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.4.0
+
+### Minor Changes
+
+- 5d0639d: option to remove comments
+
 ## 0.3.1
 
 ### Patch Changes
