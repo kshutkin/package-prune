@@ -1,10 +1,12 @@
-import cd from 'node:child_process';
-import { promisify, parseArgs } from 'node:util';
 import assert from 'node:assert';
-import test, { after, describe } from 'node:test';
+import cd from 'node:child_process';
 import fs from 'node:fs/promises';
 import process from 'node:process';
+import test, { after, describe } from 'node:test';
+import { parseArgs, promisify } from 'node:util';
+
 import { filesToString, stringToFiles } from 'cli-test-helper';
+
 import tests from './tests.json' with { type: 'json' };
 
 const exec = promisify(cd.exec);
@@ -64,16 +66,13 @@ const args = parseArgs({
 }).values;
 
 /** @type {TestCase[]} */
-const allTestCases = Object.entries(/** @type {TestSuites} */ (tests)).flatMap(
-    (entry) => entry[1].map((testCase) => /** @type {TestCase} */ (testCase))
+const allTestCases = Object.entries(/** @type {TestSuites} */ (tests)).flatMap(entry =>
+    entry[1].map(testCase => /** @type {TestCase} */ (testCase))
 );
 
 if ('capture' in args) {
-    const capture =
-        Number(args.capture) ||
-        allTestCases.reduce((max, testCase) => Math.max(max, testCase.id), 0) +
-            1;
-    let testCase = allTestCases.find((testCase) => testCase.id === capture);
+    const capture = Number(args.capture) || allTestCases.reduce((max, testCase) => Math.max(max, testCase.id), 0) + 1;
+    let testCase = allTestCases.find(testCase => testCase.id === capture);
     if (!testCase) {
         /** @type {TestCase} */
         testCase = {
@@ -97,7 +96,7 @@ if ('capture' in args) {
 
 if ('export' in args) {
     const exportN = Number(args.export);
-    const testCase = allTestCases.find((testCase) => testCase.id === exportN);
+    const testCase = allTestCases.find(testCase => testCase.id === exportN);
     if (!testCase) {
         console.error(`Test case not found: ${JSON.stringify(exportN)}`);
         process.exit(1);
@@ -108,7 +107,7 @@ if ('export' in args) {
 
 if ('result' in args) {
     const exportN = Number(args.result);
-    const testCase = allTestCases.find((testCase) => testCase.id === exportN);
+    const testCase = allTestCases.find(testCase => testCase.id === exportN);
     if (!testCase) {
         console.error(`Test case not found: ${JSON.stringify(exportN)}`);
         process.exit(1);
@@ -126,9 +125,7 @@ for (const [suiteName, suiteTestCases] of Object.entries(tests)) {
                 /** @type {ExecResult | ExecError} */
                 let result;
                 try {
-                    result = await exec(
-                        `cd ${dir}; node ../../index.js ${tc.args || ''}`
-                    );
+                    result = await exec(`cd ${dir}; node ../../src/index.js ${tc.args || ''}`);
                 } catch (e) {
                     result = /** @type {ExecError} */ (e);
                 }
@@ -144,10 +141,7 @@ for (const [suiteName, suiteTestCases] of Object.entries(tests)) {
                 } else {
                     assert.strictEqual(actualOutput, tc.output);
                     assert.strictEqual(result?.code || 0, tc.exitCode || 0);
-                    assert.strictEqual(
-                        replaceTime(result?.stdout || ''),
-                        tc.stdout
-                    );
+                    assert.strictEqual(replaceTime(result?.stdout || ''), tc.stdout);
                     assert.strictEqual(result?.stderr || '', tc.stderr);
                 }
             });
