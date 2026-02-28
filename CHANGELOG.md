@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.3.1
+
+### Patch Changes
+
+- abe26ed: pretty print adjusted sourcemap
+
 ## 0.3.0
 
 ### Minor Changes
