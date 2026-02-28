@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.5.0
+
+### Minor Changes
+
+- ab78cc1: replace jsonata with custom code
+
 ## 0.4.1
 
 ### Patch Changes
