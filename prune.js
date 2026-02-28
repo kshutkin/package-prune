@@ -1,6 +1,8 @@
 import { access, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { isStrippableFile, parseCommentTypes, stripComments } from './strip-comments.js';
+
 /**
  * Files always included by npm regardless of the `files` array.
  * README & LICENSE/LICENCE are matched case-insensitively by basename (without extension).
@@ -55,6 +57,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {string} profile
  * @property {string|boolean} flatten
  * @property {boolean} removeSourcemaps
+ * @property {string|boolean} stripComments
  * @property {boolean} optimizeFiles
  * @property {boolean} cleanupFiles
  */
@@ -114,6 +117,19 @@ export async function prunePkg(pkg, options, logger) {
             await writeFile(sourceFile, newContent, 'utf8');
             // remove sourceMap
             await rm(sourceMap);
+        }
+    }
+
+    if (options.stripComments) {
+        const typesToStrip = parseCommentTypes(/** @type {string | true} */ (options.stripComments));
+        logger.update('stripping comments...');
+        const jsFiles = await walkDir('.', ['node_modules']).then(files => files.filter(isStrippableFile));
+        for (const file of jsFiles) {
+            const content = await readFile(file, 'utf8');
+            const stripped = stripComments(content, typesToStrip);
+            if (stripped !== content) {
+                await writeFile(file, stripped, 'utf8');
+            }
         }
     }
 

@@ -32,11 +32,11 @@
     "main": "prune.js",
     "scripts": {
         "build": "dts-buddy",
-        "lint": "biome lint index.js prune.js",
-        "lint:fix": "biome check --write index.js prune.js",
+        "lint": "biome lint index.js prune.js strip-comments.js",
+        "lint:fix": "biome check --write index.js prune.js strip-comments.js",
         "ci:publish": "changeset publish",
         "prepack": "dts-buddy && node ./index.js --flatten=types",
-        "test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env ./tests/test.js"
+        "test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env --test ./tests/test.js ./tests/strip-comments.test.js"
     },
     "files": [
         "types"
