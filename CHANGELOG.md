@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.5.1
+
+### Patch Changes
+
+- b5cbf91: flatten src as well
+
 ## 0.5.0
 
 ### Minor Changes
