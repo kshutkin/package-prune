@@ -659,6 +659,16 @@
             "stdout": "preparing..\n\nflattening types...\ncleaning up files...\n",
             "stderr": "",
             "exitCode": 0
+        },
+        {
+            "id": 69,
+            "name": "flatten with subpath exports that are not directories",
+            "args": "--flatten=types,src",
+            "input": "src\n  index.js\n|export { createLogger } from './core.js';\n  core.js\n|export function createLogger() {}\n  default-formatting.js\n|export function format() {}\ntypes\n  index.d.ts\n|declare module '@niceties/logger';\npackage.json\n|{\n|  \"name\": \"@niceties/logger\",\n|  \"main\": \"./src/index.js\",\n|  \"types\": \"./types/index.d.ts\",\n|  \"exports\": {\n|    \".\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/index.js\"\n|    },\n|    \"./default-formatting\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/default-formatting.js\"\n|    },\n|    \"./core\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/core.js\"\n|    }\n|  },\n|  \"files\": [\n|    \"src\",\n|    \"types\"\n|  ]\n|}",
+            "output": "core.js\n|export function createLogger() {}\ndefault-formatting.js\n|export function format() {}\nindex.d.ts\n|declare module '@niceties/logger';\nindex.js\n|export { createLogger } from './core.js';\npackage.json\n|{\n|  \"name\": \"@niceties/logger\",\n|  \"main\": \"./index.js\",\n|  \"types\": \"./index.d.ts\",\n|  \"exports\": {\n|    \".\": {\n|      \"types\": \"./index.d.ts\",\n|      \"default\": \"./index.js\"\n|    },\n|    \"./default-formatting\": {\n|      \"types\": \"./index.d.ts\",\n|      \"default\": \"./default-formatting.js\"\n|    },\n|    \"./core\": {\n|      \"types\": \"./index.d.ts\",\n|      \"default\": \"./core.js\"\n|    }\n|  }\n|}\n|",
+            "stdout": "preparing..\n\nflattening types, src...\ncleaning up files...\n",
+            "stderr": "",
+            "exitCode": 0
         }
     ]
 }

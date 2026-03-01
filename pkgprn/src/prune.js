@@ -608,8 +608,15 @@ async function isEmptyDir(dir) {
  * @returns {Promise<boolean>}
  */
 async function isDirectory(file) {
-    const fileStat = await stat(file);
-    return fileStat.isDirectory();
+    try {
+        const fileStat = await stat(file);
+        return fileStat.isDirectory();
+    } catch (e) {
+        if (typeof e === 'object' && e != null && 'code' in e && e.code === 'ENOENT') {
+            return false;
+        }
+        throw e;
+    }
 }
 
 /**
