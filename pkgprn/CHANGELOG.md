@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.5.4
+
+### Patch Changes
+
+- 6653f6d: fix remove sourcemaps and flatten
+
 ## 0.5.3
 
 ### Patch Changes
