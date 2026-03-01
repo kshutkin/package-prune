@@ -100,7 +100,7 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (options.flatten) {
-        await flatten(pkg, options.flatten, logger);
+        await flatten(pkg, options.flatten, logger, options.removeSourcemaps);
     }
 
     if (options.removeSourcemaps) {
@@ -118,6 +118,11 @@ export async function prunePkg(pkg, options, logger) {
             await writeFile(sourceFile, newContent, 'utf8');
             // remove sourceMap
             await rm(sourceMap);
+        }
+        // remove deleted .map files from pkg.files (e.g. after flatten added them individually)
+        if (pkg.files && sourceMaps.length > 0) {
+            const removedMaps = new Set(sourceMaps.map(f => normalizePath(path.relative('.', f))));
+            pkg.files = pkg.files.filter(f => !removedMaps.has(normalizePath(f)));
         }
     }
 
@@ -269,8 +274,9 @@ export async function prunePkg(pkg, options, logger) {
  * @param {PackageJson} pkg
  * @param {string|true} flatten
  * @param {Logger} logger
+ * @param {boolean} [skipSourcemapAdjust] - skip sourcemap adjustment (e.g. when sourcemaps will be removed)
  */
-async function flatten(pkg, flatten, logger) {
+async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
     // find out where is the dist folder
 
     const allReferences = extractReferences(pkg);
@@ -421,7 +427,7 @@ async function flatten(pkg, flatten, logger) {
 
     // adjust sourcemap paths for explicit flatten only
     // (automatic flatten is safe because the common prefix is derived from package.json references)
-    if (typeof flatten === 'string') {
+    if (typeof flatten === 'string' && !skipSourcemapAdjust) {
         // build reverse map: normalized old path -> new path
         // so we can fix sources that point to files which themselves moved
         /** @type {Map<string, string>} */

@@ -669,6 +669,16 @@
             "stdout": "preparing..\n\nflattening types, src...\ncleaning up files...\n",
             "stderr": "",
             "exitCode": 0
+        },
+        {
+            "id": 70,
+            "name": "explicit flatten with removeSourcemaps",
+            "args": "--flatten=dist --removeSourcemaps --optimize-files=false --cleanup-files=false",
+            "input": "dist\n  index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\n  index.js.map\n|{\"version\":3,\"sources\":[\"../src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\nsrc\n  index.ts\n|console.log(\"hello\")\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"src\"\n|  ]\n|}",
+            "output": "index.js\n|console.log(\"hello\")\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"src\",\n|    \"index.js\"\n|  ]\n|}\n|\nsrc\n  index.ts\n|console.log(\"hello\")",
+            "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
+            "stderr": "",
+            "exitCode": 0
         }
     ]
 }
