@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.5.3
+
+### Patch Changes
+
+- f5971f0: fix error in isDirectory handling
+
 ## 0.5.2
 
 ### Patch Changes
