@@ -1,0 +1,53 @@
+{
+    "name": "pkgprn",
+    "version": "0.5.2",
+    "license": "MIT",
+    "author": "Konstantin Shutkin",
+    "bin": "./src/index.js",
+    "type": "module",
+    "types": "./types/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./types/index.d.ts",
+            "default": "./src/prune.js"
+        },
+        "./package.json": "./package.json"
+    },
+    "description": "Prune package.json before publish",
+    "keywords": [
+        "npm",
+        "package",
+        "cleanup",
+        "pack",
+        "prepack"
+    ],
+    "homepage": "https://github.com/kshutkin/package-prune/blob/main/pkgprn/README.md",
+    "bugs": {
+        "url": "https://github.com/kshutkin/package-prune/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/kshutkin/package-prune.git",
+        "directory": "pkgprn"
+    },
+    "main": "src/prune.js",
+    "scripts": {
+        "build": "dts-buddy",
+        "prepack": "node ./src/index.js --flatten=types,src --strip-comments",
+        "test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env --test ./tests/*.test.js"
+    },
+    "files": [
+        "types",
+        "src"
+    ],
+    "dependencies": {
+        "@jridgewell/sourcemap-codec": "^1.5.5",
+        "@niceties/logger": "^1.1.13",
+        "cleye": "2.2.1"
+    },
+    "devDependencies": {
+        "c8": "^11.0.0",
+        "cli-test-helper": "^0.1.2",
+        "dts-buddy": "^0.7.0"
+    }
+}
