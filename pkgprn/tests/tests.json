@@ -679,6 +679,16 @@
             "stdout": "preparing..\n\ncleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
             "stderr": "",
             "exitCode": 0
+        },
+        {
+            "id": 71,
+            "name": "flatten 2 levels deep with empty intermediate directory",
+            "args": "--flatten=dist",
+            "input": "dist\n  sub\n    index.js\n|\n    index.mjs\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/sub/index.js\",\n|  \"module\": \"./dist/sub/index.mjs\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
+            "output": "package.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./sub/index.js\",\n|  \"module\": \"./sub/index.mjs\"\n|}\n|\nsub\n  index.js\n|\n  index.mjs\n|",
+            "stdout": "preparing..\n\nflattening dist...\ncleaning up files...\n",
+            "stderr": "",
+            "exitCode": 0
         }
     ]
 }
