@@ -21,7 +21,6 @@
     "readme": "README.md",
     "scripts": {
         "build": "rollup -c",
-        "lint": "biome lint ./src",
         "prepack": "node ./index.js prune --strip-comments"
     },
     "dependencies": {
