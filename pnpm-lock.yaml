@@ -30,8 +30,8 @@ importers:
         specifier: ^1.5.5
         version: 1.5.5
       '@niceties/logger':
-        specifier: ^1.1.13
-        version: 1.1.13
+        specifier: ^2.0.0
+        version: 2.0.0
       cleye:
         specifier: 2.2.1
         version: 2.2.1
@@ -59,8 +59,8 @@ importers:
         version: 4.1.5
     devDependencies:
       '@niceties/logger':
-        specifier: ^1.1.13
-        version: 1.1.13
+        specifier: ^2.0.0
+        version: 2.0.0
       '@rollup-extras/plugin-clean':
         specifier: ^1.3.8
         version: 1.3.9(rollup@4.59.0)
@@ -245,6 +245,10 @@ packages:
 
   '@niceties/logger@1.1.13':
     resolution: {integrity: sha512-yorxAcjtpxCgZQy1o4Lq3Umr2rzwHyMN9dZCgZBKXIFkxlhsIH7olQFPSLJdvRmQC+4iaPFcPIq1WvN1ObtPBA==}
+    engines: {node: '>=15'}
+
+  '@niceties/logger@2.0.0':
+    resolution: {integrity: sha512-ZQXkE9jR4disjnrCuEmfQ1D5zvi9Vhhsd2aO4Ic9S5AfMZUnU3kAX8g/Ul6PEwFB62/d71i4h3MaZAhIIemh+g==}
     engines: {node: '>=15'}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -1278,6 +1282,10 @@ snapshots:
       read-yaml-file: 1.1.0
 
   '@niceties/logger@1.1.13':
+    dependencies:
+      kleur: 4.1.5
+
+  '@niceties/logger@2.0.0':
     dependencies:
       kleur: 4.1.5
 

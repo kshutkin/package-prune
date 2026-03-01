@@ -42,7 +42,7 @@
     ],
     "dependencies": {
         "@jridgewell/sourcemap-codec": "^1.5.5",
-        "@niceties/logger": "^1.1.13",
+        "@niceties/logger": "^2.0.0",
         "cleye": "2.2.1"
     },
     "devDependencies": {
