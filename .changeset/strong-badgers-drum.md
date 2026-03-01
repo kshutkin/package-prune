@@ -1,5 +1,0 @@
----
-"pkgprn": patch
----
-
-strip comments

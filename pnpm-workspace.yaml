@@ -1,3 +1,7 @@
+packages:
+    - pkgprn
+    - pkgprn-internal
+
 overrides:
     yargs: ^18.0.0
 onlyBuiltDependencies:

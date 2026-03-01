@@ -13,5 +13,7 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true
-    }
+    },
+    "include": ["src/**/*.js"],
+    "exclude": ["node_modules", "dist", "coverage", "types"]
 }
