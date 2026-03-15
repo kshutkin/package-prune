@@ -1,9 +1,9 @@
 {
-  "scripts": {},
-  "devDependencies": {},
-  "name": "mylib",
-  "main": "./dist/index.js",
-  "files": [
-    "dist"
-  ]
+    "scripts": {},
+    "devDependencies": {},
+    "name": "mylib",
+    "main": "./dist/index.js",
+    "files": [
+        "dist"
+    ]
 }
