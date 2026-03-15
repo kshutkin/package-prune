@@ -1,5 +1,11 @@
 # pkgprn-internal
 
+## 0.5.5
+
+### Patch Changes
+
+- a26d84d: fixed cleanup / flatten order
+
 ## 0.5.4
 
 ## 0.5.3
