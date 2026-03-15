@@ -99,6 +99,10 @@ export async function prunePkg(pkg, options, logger) {
         logger('cleanup is disabled, junk files may cause flatten to fail', 2);
     }
 
+    if (pkg.files && Array.isArray(pkg.files) && pkg.files.length > 0 && options.cleanupFiles) {
+        await cleanupDir(pkg, logger);
+    }
+
     if (options.flatten) {
         await flatten(pkg, options.flatten, logger, options.removeSourcemaps);
     }
@@ -263,8 +267,8 @@ export async function prunePkg(pkg, options, logger) {
         }
     }
 
-    if (pkg.files && Array.isArray(pkg.files) && options.cleanupFiles) {
-        await cleanupDir(pkg, logger);
+    if (options.cleanupFiles) {
+        pkg.files = undefined;
     }
 }
 
@@ -790,8 +794,6 @@ async function cleanupDir(pkg, logger) {
         // not matched - remove
         await rm(entry, { recursive: true, force: true });
     }
-
-    pkg.files = undefined;
 }
 
 /**
