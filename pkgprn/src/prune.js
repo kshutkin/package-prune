@@ -1,4 +1,4 @@
-import { access, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { access, glob as fsGlob, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { extractReferences } from './extract-references.js';
@@ -91,6 +91,10 @@ export async function prunePkg(pkg, options, logger) {
         if (Object.keys(pkg.scripts).length === 0) {
             pkg.scripts = undefined;
         }
+    }
+
+    if (pkg.files && Array.isArray(pkg.files)) {
+        pkg.files = await expandFileGlobs(pkg.files);
     }
 
     if (options.cleanupFiles) {
@@ -746,6 +750,36 @@ function isAlwaysIncludedByBasename(file) {
     }
     const basenameWithoutExtension = path.basename(file, path.extname(file)).toUpperCase();
     return alwaysIncludedBasenames.includes(basenameWithoutExtension);
+}
+
+/**
+ * Returns true if the string contains glob special characters.
+ * @param {string} str
+ * @returns {boolean}
+ */
+function isGlobPattern(str) {
+    return /[*?[\]{}]/.test(str);
+}
+
+/**
+ * Expands glob patterns in the files array using Node's built-in fs.glob.
+ * Non-glob entries are passed through unchanged.
+ * @param {string[]} files
+ * @returns {Promise<string[]>}
+ */
+async function expandFileGlobs(files) {
+    /** @type {string[]} */
+    const result = [];
+    for (const entry of files) {
+        if (isGlobPattern(entry)) {
+            for await (const match of fsGlob(entry)) {
+                result.push(normalizePath(match));
+            }
+        } else {
+            result.push(entry);
+        }
+    }
+    return [...new Set(result)];
 }
 
 /**

@@ -699,6 +699,36 @@
             "stdout": "preparing..\n\ncleaning up files...\nflattening types, src...\n",
             "stderr": "",
             "exitCode": 0
+        },
+        {
+            "id": 73,
+            "name": "cleanup with glob pattern in files keeps matching files",
+            "args": "--optimize-files=false",
+            "input": "extra.txt\n|junk\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./src/index.js\",\n|  \"exports\": {\n|    \".\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/index.js\"\n|    },\n|    \"./help\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/help.js\"\n|    },\n|    \"./commands\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/commands.js\"\n|    }\n|  },\n|  \"files\": [\n|    \"src/*.js\",\n|    \"types\"\n|  ]\n|}\nsrc\n  commands.js\n|// commands code\n  help.js\n|// help code\n  index.js\n|// index code\n  parameters.js\n|// parameters code\n  types.d.ts\n|// types\ntypes\n  index.d.ts\n|// type defs",
+            "output": "package.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./src/index.js\",\n|  \"exports\": {\n|    \".\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/index.js\"\n|    },\n|    \"./help\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/help.js\"\n|    },\n|    \"./commands\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/commands.js\"\n|    }\n|  }\n|}\n|\nsrc\n  commands.js\n|// commands code\n  help.js\n|// help code\n  index.js\n|// index code\n  parameters.js\n|// parameters code\ntypes\n  index.d.ts\n|// type defs",
+            "stdout": "preparing..\n\ncleaning up files...\n",
+            "stderr": "",
+            "exitCode": 0
+        },
+        {
+            "id": 74,
+            "name": "flatten with glob pattern in files",
+            "args": "--flatten=types,src",
+            "input": "extra.txt\n|junk\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./src/index.js\",\n|  \"exports\": {\n|    \".\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/index.js\"\n|    },\n|    \"./help\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/help.js\"\n|    },\n|    \"./commands\": {\n|      \"types\": \"./types/index.d.ts\",\n|      \"default\": \"./src/commands.js\"\n|    }\n|  },\n|  \"files\": [\n|    \"src/*.js\",\n|    \"types\"\n|  ]\n|}\nsrc\n  commands.js\n|// commands code\n  help.js\n|// help code\n  index.js\n|// index code\n  parameters.js\n|// parameters code\n  types.d.ts\n|// types\ntypes\n  index.d.ts\n|// type defs",
+            "output": "commands.js\n|// commands code\nhelp.js\n|// help code\nindex.d.ts\n|// type defs\nindex.js\n|// index code\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"exports\": {\n|    \".\": {\n|      \"types\": \"./index.d.ts\",\n|      \"default\": \"./index.js\"\n|    },\n|    \"./help\": {\n|      \"types\": \"./index.d.ts\",\n|      \"default\": \"./help.js\"\n|    },\n|    \"./commands\": {\n|      \"types\": \"./index.d.ts\",\n|      \"default\": \"./commands.js\"\n|    }\n|  }\n|}\n|\nparameters.js\n|// parameters code",
+            "stdout": "preparing..\n\ncleaning up files...\nflattening types, src...\n",
+            "stderr": "",
+            "exitCode": 0
+        },
+        {
+            "id": 75,
+            "name": "cleanup with glob pattern matching no files removes glob entry",
+            "args": "--optimize-files=false",
+            "input": "package.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist/*.ts\",\n|    \"dist\"\n|  ]\n|}\ndist\n  index.js\n|\n  helper.js\n|",
+            "output": "dist\n  helper.js\n|\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\"\n|}\n|",
+            "stdout": "preparing..\n\ncleaning up files...\n",
+            "stderr": "",
+            "exitCode": 0
         }
     ]
 }
