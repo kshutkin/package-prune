@@ -18,7 +18,7 @@
     "readme": "README.md",
     "scripts": {
         "build": "rollup -c",
-        "prepack": "node ./index.js prune --stripComments=all"
+        "prepack": "node ./index.js prune --strip-comments"
     },
     "dependencies": {
         "@niceties/node-parseargs-plus": "^0.1.1",
