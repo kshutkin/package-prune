@@ -443,34 +443,27 @@ function scanTemplateTail(s, i, len, templateStack, comments) {
 /**
  * Parse the `--strip-comments` flag value into a `Set` of comment types.
  *
- * - `'all'` or `true`  → `{'jsdoc', 'regular'}` (license and annotation are preserved by default)
- * - `'jsdoc,regular'`  → `{'jsdoc', 'regular'}`
- * - `'license'`        → `{'license'}` (must be explicitly requested)
- * - `'annotation'`     → `{'annotation'}` (must be explicitly requested)
+ * - `true`                    → `{'jsdoc', 'regular'}` (license and annotation are preserved by default)
+ * - `['jsdoc', 'regular']`   → `{'jsdoc', 'regular'}`
+ * - `['license']`            → `{'license'}` (must be explicitly requested)
+ * - `['annotation']`         → `{'annotation'}` (must be explicitly requested)
  *
- * @param {string | true} value
+ * @param {string[] | true} value
  * @returns {Set<CommentType>}
  */
 export function parseCommentTypes(value) {
-    if (value === true || value === 'all') {
+    if (value === true) {
         return new Set(/** @type {CommentType[]} */ (['jsdoc', 'regular']));
     }
 
     const valid = /** @type {CommentType[]} */ (['jsdoc', 'license', 'regular', 'annotation']);
-    const parts = String(value)
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
 
     /** @type {Set<CommentType>} */
     const result = new Set();
 
-    for (const part of parts) {
-        if (part === 'all') {
-            return new Set(/** @type {CommentType[]} */ (['jsdoc', 'regular']));
-        }
+    for (const part of value) {
         if (!valid.includes(/** @type {CommentType} */ (part))) {
-            throw new Error(`unknown comment type "${part}" (expected: ${valid.join(', ')}, all)`);
+            throw new Error(`unknown comment type "${part}" (expected: ${valid.join(', ')})`);
         }
         result.add(/** @type {CommentType} */ (part));
     }

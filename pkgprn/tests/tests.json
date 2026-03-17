@@ -13,7 +13,7 @@
         {
             "id": 4,
             "name": "prune flatten",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"scripts\": {},\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -23,7 +23,7 @@
         {
             "id": 5,
             "name": "prune flatten (special files)",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {},\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
             "output": "index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|\nREADME.md\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -53,7 +53,7 @@
         {
             "id": 8,
             "name": "prune with app profile removes all but postinstall and start from scripts",
-            "args": "prune --profile=app",
+            "args": "--profile=app",
             "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {\n|    \"start\": \"rollup -c -w\",\n|    \"build\": \"rollup -c\",\n|    \"postinstall\": \"npm run build\",\n|    \"prepack\": \"pkgbld prune\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
             "output": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"scripts\": {\n|    \"start\": \"rollup -c -w\",\n|    \"postinstall\": \"npm run build\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\"\n|}\n|\nREADME.md\n|",
             "stdout": "preparing..\n\ncleaning up files...\n",
@@ -63,7 +63,7 @@
         {
             "id": 9,
             "name": "prune with bin (object form) and flatten",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./dist/index.js\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
             "output": "index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./index.js\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|\nREADME.md\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -73,7 +73,7 @@
         {
             "id": 10,
             "name": "prune flatten with deep folder",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  dist\n    index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./dist/dist/index.js\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
             "output": "index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./index.js\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|\nREADME.md\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist/dist...\n",
@@ -83,7 +83,7 @@
         {
             "id": 11,
             "name": "prune with bin (string form) and flatten",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": \"./dist/index.js\",\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}\nREADME.md\n|",
             "output": "index.js\n|\nlicence.txt\n|\npackage.json\n|{\n|  \"bin\": \"./index.js\",\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|\nREADME.md\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -93,7 +93,7 @@
         {
             "id": 12,
             "name": "multilevel",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\n  lib\n    index.js\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./dist/index.js\"\n|  },\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/lib/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ]\n|}",
             "output": "index.js\n|\nlib\n  index.js\n|\npackage.json\n|{\n|  \"bin\": {\n|    \"mylib\": \"./index.js\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./lib/index.js\"\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -103,7 +103,7 @@
         {
             "id": 13,
             "name": "multilevel (another order)",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\n  lib\n    index.js\n|\npackage.json\n|{\n|  \"devDependencies\": {},\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"./licence.txt\",\n|    \"README.md\"\n|  ],\n|  \"bin\": {\n|    \"mylib\": \"./dist/lib/index.js\"\n|  }\n|}",
             "output": "index.js\n|\nlib\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"bin\": {\n|    \"mylib\": \"./lib/index.js\"\n|  }\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -123,7 +123,7 @@
         {
             "id": 15,
             "name": "file already exists",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\nindex.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
             "exitCode": 0,
@@ -133,7 +133,7 @@
         {
             "id": 16,
             "name": "2 dist folders",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\ndist2\n  index2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"module\": \"./dist2/index2.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"module\": \"./dist2/index2.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "exitCode": 255,
@@ -153,7 +153,7 @@
         {
             "id": 18,
             "name": "folder with / at the end",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist/\"\n|  ]\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -163,7 +163,7 @@
         {
             "id": 19,
             "name": "flatten with exports",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\n  index.mjs\n|\n  second.js\n|\n  second.mjs\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"exports\": {\n|    \".\": {\n|      \"import\": \"./dist/index.mjs\",\n|      \"require\": \"./dist/index.js\"\n|    },\n|    \"./second\": {\n|      \"import\": \"./dist/second.mjs\",\n|      \"require\": \"./dist/second.js\"\n|    }\n|  },\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}\nsecond\n  package.json\n|",
             "output": "index.js\n|\nindex.mjs\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"exports\": {\n|    \".\": {\n|      \"import\": \"./index.mjs\",\n|      \"require\": \"./index.js\"\n|    },\n|    \"./second\": {\n|      \"import\": \"./second.mjs\",\n|      \"require\": \"./second.js\"\n|    }\n|  }\n|}\n|\nsecond.js\n|\nsecond.mjs\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -173,7 +173,7 @@
         {
             "id": 20,
             "name": "flatten pkg with extra number property",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ],\n|  \"extra\": 100\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"extra\": 100\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -183,7 +183,7 @@
         {
             "id": 21,
             "name": "flatten with directories.bin",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  bin\n    1.js\n|\n    2.js\n|\n  index.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "bin\n  1.js\n|\n  2.js\n|\nindex.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -193,7 +193,7 @@
         {
             "id": 22,
             "name": "flatten with directories.bin 2",
-            "args": "--flatten=auto --no-optimize-files --no-cleanup-files",
+            "args": "--flatten --no-optimize-files --no-cleanup-files",
             "input": "dist\n  bin\n    1.js\n|\n    2.js\n|\n  index.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "bin\n  1.js\n|\n  2.js\n|\nindex.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"bin/1.js\",\n|    \"bin/2.js\"\n|  ]\n|}\n|",
             "stdout": "preparing..\n\nℹ cleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
@@ -323,7 +323,7 @@
         {
             "id": 35,
             "name": "flatten auto with root-level references",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}",
             "exitCode": 255,
@@ -353,7 +353,7 @@
         {
             "id": 38,
             "name": "flatten auto with no references at all",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\"\n|}",
             "output": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\"\n|}",
             "exitCode": 255,
@@ -483,7 +483,7 @@
         {
             "id": 51,
             "name": "flatten with junk files in both root and dist",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": ".DS_Store\n|junk\ndist\n  .DS_Store\n|junk2\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -493,7 +493,7 @@
         {
             "id": 52,
             "name": "flatten with junk pattern files in both root and dist",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": "file.orig\n|orig1\ndist\n  file.orig\n|orig2\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist...\n",
@@ -503,7 +503,7 @@
         {
             "id": 53,
             "name": "flatten with multiple junk files in dist subdirectory",
-            "args": "--flatten=auto",
+            "args": "--flatten",
             "input": ".DS_Store\n|junk\n._metadata\n|meta\ndist\n  .DS_Store\n|junk2\n  ._metadata\n|meta2\n  lib\n    .DS_Store\n|junk3\n    index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/lib/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist/lib...\n",
@@ -513,7 +513,7 @@
         {
             "id": 54,
             "name": "flatten with cleanup disabled warns about junk files",
-            "args": "--flatten=auto --no-cleanup-files",
+            "args": "--flatten --no-cleanup-files",
             "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
             "stdout": "preparing..\n\nℹ cleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
@@ -523,7 +523,7 @@
         {
             "id": 55,
             "name": "flatten with cleanup disabled fails on junk file conflict",
-            "args": "--flatten=auto --no-cleanup-files",
+            "args": "--flatten --no-cleanup-files",
             "input": ".DS_Store\n|junk\ndist\n  .DS_Store\n|junk2\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": ".DS_Store\n|junk\ndist\n  .DS_Store\n|junk2\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "stdout": "preparing..\n\nℹ cleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n✕ Error: dist folder cannot be flattened because files already exist: .DS_Store\n",
@@ -573,7 +573,7 @@
         {
             "id": 60,
             "name": "auto flatten does not adjust sourcemap sources",
-            "args": "--flatten=auto --no-optimize-files --no-cleanup-files",
+            "args": "--flatten --no-optimize-files --no-cleanup-files",
             "input": "dist\n  index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\n  index.js.map\n|{\"version\":3,\"sources\":[\"../src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
             "output": "index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\nindex.js.map\n|{\"version\":3,\"sources\":[\"../src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.js.map\"\n|  ]\n|}\n|",
             "stdout": "preparing..\n\nℹ cleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",

@@ -40,39 +40,24 @@ describe('parseCommentTypes', () => {
         assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
     });
 
-    test('"all" returns all types', () => {
-        const s = parseCommentTypes('all');
-        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
-    });
-
     test('single type', () => {
-        assert.deepStrictEqual([...parseCommentTypes('jsdoc')], ['jsdoc']);
-        assert.deepStrictEqual([...parseCommentTypes('license')], ['license']);
-        assert.deepStrictEqual([...parseCommentTypes('regular')], ['regular']);
-        assert.deepStrictEqual([...parseCommentTypes('annotation')], ['annotation']);
+        assert.deepStrictEqual([...parseCommentTypes(['jsdoc'])], ['jsdoc']);
+        assert.deepStrictEqual([...parseCommentTypes(['license'])], ['license']);
+        assert.deepStrictEqual([...parseCommentTypes(['regular'])], ['regular']);
+        assert.deepStrictEqual([...parseCommentTypes(['annotation'])], ['annotation']);
     });
 
-    test('comma-separated types', () => {
-        const s = parseCommentTypes('jsdoc,regular');
-        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
-    });
-
-    test('comma-separated with spaces', () => {
-        const s = parseCommentTypes('jsdoc , license');
-        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'license']);
-    });
-
-    test('"all" in comma list returns everything', () => {
-        const s = parseCommentTypes('jsdoc,all');
+    test('multiple types', () => {
+        const s = parseCommentTypes(['jsdoc', 'regular']);
         assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
     });
 
     test('unknown type throws', () => {
-        assert.throws(() => parseCommentTypes('unknown'), /unknown comment type/);
+        assert.throws(() => parseCommentTypes(['unknown']), /unknown comment type/);
     });
 
-    test('empty string falls back to all', () => {
-        const s = parseCommentTypes('');
+    test('empty array falls back to all', () => {
+        const s = parseCommentTypes([]);
         assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
     });
 });

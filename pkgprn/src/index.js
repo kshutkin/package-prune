@@ -1,34 +1,42 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 import { createLogger } from '@niceties/logger';
 import { parseArgsPlus } from '@niceties/node-parseargs-plus';
 import { camelCase } from '@niceties/node-parseargs-plus/camel-case';
+import { customValue } from '@niceties/node-parseargs-plus/custom-value';
 import { help } from '@niceties/node-parseargs-plus/help';
 import { optionalValue } from '@niceties/node-parseargs-plus/optional-value';
+import { readPackageJson } from '@niceties/node-parseargs-plus/package-info';
 
 import { prunePkg } from './prune.js';
 
-// globals
-const __dirname = dirname(fileURLToPath(import.meta.url));
+/**
+ * Parse a multi-value string option: split by commas, trim, and filter empty strings.
+ * Empty result (from bare --flag usage) signals "use defaults" → true.
+ * @param {string[]} values
+ * @returns {true | string[]}
+ */
+function parseMultiString(values) {
+    const items = values
+        .flatMap(v => v.split(','))
+        .map(s => s.trim())
+        .filter(Boolean);
+    return items.length ? items : true;
+}
 
 const logger = createLogger();
 logger.update('preparing..');
 
 try {
-    const version = await getMyVersion();
+    const myPkgData = await readPackageJson(import.meta.url);
 
     logger.update('');
-    process.stdout.moveCursor?.(0, -1);
 
     const { values } = parseArgsPlus(
         {
-            name: 'pkgprn',
-            version: version ?? '<unknown>',
-            description: 'prune devDependencies and redundant scripts from package.json',
-            allowPositionals: true,
+            ...myPkgData,
             allowNegative: true,
             options: {
                 profile: {
@@ -37,10 +45,10 @@ try {
                     default: 'library',
                 },
                 flatten: {
-                    type: 'string',
+                    type: /** @type {(values: string[]) => true | string[]} */ (parseMultiString),
                     multiple: true,
                     optionalValue: true,
-                    description: 'flatten package files (use "auto" for auto-detect, or specify directories)',
+                    description: 'flatten package files (omit value to auto-detect, or specify directories)',
                 },
                 removeSourcemaps: {
                     type: 'boolean',
@@ -48,10 +56,10 @@ try {
                     default: false,
                 },
                 stripComments: {
-                    type: 'string',
+                    type: /** @type {(values: string[]) => true | string[]} */ (parseMultiString),
                     multiple: true,
                     optionalValue: true,
-                    description: 'strip comments: all (default: jsdoc,regular), jsdoc, license, regular, annotation',
+                    description: 'strip comments (omit value for defaults, or specify types: jsdoc, license, regular, annotation)',
                 },
                 optimizeFiles: {
                     type: 'boolean',
@@ -65,18 +73,13 @@ try {
                 },
             },
         },
-        [camelCase, optionalValue, help]
+        [camelCase, customValue, optionalValue, help]
     );
-
-    const flattenDirs = values.flatten
-        ?.flatMap(v => v.split(','))
-        .map(s => s.trim())
-        .filter(Boolean);
 
     const flags = {
         ...values,
-        flatten: flattenDirs?.includes('auto') || values.flatten?.includes('') ? true : flattenDirs?.length ? flattenDirs : false,
-        stripComments: values.stripComments?.length ? values.stripComments.filter(Boolean).join(',') || 'all' : false,
+        flatten: values.flatten ?? false,
+        stripComments: values.stripComments ?? false,
     };
 
     const pkg = await readPackage('.');
@@ -90,15 +93,6 @@ try {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.finish(`Error: ${errorMessage}`, 3);
     process.exit(255);
-}
-
-/**
- * @returns {Promise<string>}
- */
-async function getMyVersion() {
-    const pkg = await readPackage(resolve(__dirname));
-
-    return pkg && 'version' in pkg && typeof pkg.version === 'string' ? pkg.version : '<unknown>';
 }
 
 /**

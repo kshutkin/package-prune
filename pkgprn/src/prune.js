@@ -56,9 +56,9 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
 /**
  * @typedef {Object} PruneOptions
  * @property {string} profile
- * @property {string[]|boolean} flatten
+ * @property {true|string[]|false} flatten
  * @property {boolean} removeSourcemaps
- * @property {string|boolean} stripComments
+ * @property {true|string[]|false} stripComments
  * @property {boolean} optimizeFiles
  * @property {boolean} cleanupFiles
  */
@@ -135,7 +135,7 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (options.stripComments) {
-        const typesToStrip = parseCommentTypes(/** @type {string | true} */ (options.stripComments));
+        const typesToStrip = parseCommentTypes(options.stripComments);
         logger.update('stripping comments...');
         const allFiles = await walkDir('.', ['node_modules']);
         const jsFiles = allFiles.filter(isStrippableFile);
@@ -279,7 +279,7 @@ export async function prunePkg(pkg, options, logger) {
 /**
  * Flattens the dist directory and updates package.json references.
  * @param {PackageJson} pkg
- * @param {string[]|true} flatten
+ * @param {true|string[]} flatten
  * @param {Logger} logger
  * @param {boolean} [skipSourcemapAdjust] - skip sourcemap adjustment (e.g. when sourcemaps will be removed)
  */
