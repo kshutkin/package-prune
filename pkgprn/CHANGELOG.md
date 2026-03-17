@@ -1,5 +1,12 @@
 # pkgprn
 
+## 0.7.0
+
+### Minor Changes
+
+- f749679: change cleye to @niceties/node-parseargs-plus
+- 4b07769: added annotation comments support
+
 ## 0.6.0
 
 ### Minor Changes
