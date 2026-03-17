@@ -56,7 +56,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
 /**
  * @typedef {Object} PruneOptions
  * @property {string} profile
- * @property {string|boolean} flatten
+ * @property {string[]|boolean} flatten
  * @property {boolean} removeSourcemaps
  * @property {string|boolean} stripComments
  * @property {boolean} optimizeFiles
@@ -278,9 +278,8 @@ export async function prunePkg(pkg, options, logger) {
 
 /**
  * Flattens the dist directory and updates package.json references.
- * Supports multiple directories (comma-separated when passed as a string).
  * @param {PackageJson} pkg
- * @param {string|true} flatten
+ * @param {string[]|true} flatten
  * @param {Logger} logger
  * @param {boolean} [skipSourcemapAdjust] - skip sourcemap adjustment (e.g. when sourcemaps will be removed)
  */
@@ -325,11 +324,7 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
         }
         distDirs = [distDir];
     } else {
-        // split on comma to support multiple directories
-        distDirs = flatten
-            .split(',')
-            .map(d => normalizePath(d.trim()))
-            .filter(Boolean);
+        distDirs = flatten.map(d => normalizePath(d.trim())).filter(Boolean);
     }
 
     logger.update(`flattening ${distDirs.join(', ')}...`);
@@ -435,7 +430,7 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
 
     // adjust sourcemap paths for explicit flatten only
     // (automatic flatten is safe because the common prefix is derived from package.json references)
-    if (typeof flatten === 'string' && !skipSourcemapAdjust) {
+    if (Array.isArray(flatten) && !skipSourcemapAdjust) {
         // build reverse map: normalized old path -> new path
         // so we can fix sources that point to files which themselves moved
         /** @type {Map<string, string>} */

@@ -33,7 +33,7 @@
     "main": "src/prune.js",
     "scripts": {
         "build": "dts-buddy",
-        "prepack": "node ./src/index.js --flatten=types,src --strip-comments",
+        "prepack": "node ./src/index.js --flatten=types --flatten=src --strip-comments",
         "test": "c8 --src=. --all -r=html -r=text node --env-file=ci.env --test ./tests/*.test.js"
     },
     "files": [
@@ -42,8 +42,8 @@
     ],
     "dependencies": {
         "@jridgewell/sourcemap-codec": "^1.5.5",
-        "@niceties/logger": "^1.1.13",
-        "cleye": "2.2.1"
+        "@niceties/logger": "^2.1.0",
+        "@niceties/node-parseargs-plus": "^0.2.1"
     },
     "devDependencies": {
         "c8": "^11.0.0",

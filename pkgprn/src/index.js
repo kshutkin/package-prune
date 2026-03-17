@@ -3,9 +3,11 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { cli } from 'cleye';
-
 import { createLogger } from '@niceties/logger';
+import { parseArgsPlus } from '@niceties/node-parseargs-plus';
+import { camelCase } from '@niceties/node-parseargs-plus/camel-case';
+import { help } from '@niceties/node-parseargs-plus/help';
+import { optionalValue } from '@niceties/node-parseargs-plus/optional-value';
 
 import { prunePkg } from './prune.js';
 
@@ -21,51 +23,67 @@ try {
     logger.update('');
     process.stdout.moveCursor?.(0, -1);
 
-    const cliOptions = cli({
-        name: 'pkgprn',
-        version: version ?? '<unknown>',
-        help: {
+    const { values } = parseArgsPlus(
+        {
+            name: 'pkgprn',
+            version: version ?? '<unknown>',
             description: 'prune devDependencies and redundant scripts from package.json',
+            allowPositionals: true,
+            allowNegative: true,
+            options: {
+                profile: {
+                    type: 'string',
+                    description: 'profile to use',
+                    default: 'library',
+                },
+                flatten: {
+                    type: 'string',
+                    multiple: true,
+                    optionalValue: true,
+                    description: 'flatten package files (use "auto" for auto-detect, or specify directories)',
+                },
+                removeSourcemaps: {
+                    type: 'boolean',
+                    description: 'remove sourcemaps',
+                    default: false,
+                },
+                stripComments: {
+                    type: 'string',
+                    multiple: true,
+                    optionalValue: true,
+                    description: 'strip comments: all (default), jsdoc, license, regular',
+                },
+                optimizeFiles: {
+                    type: 'boolean',
+                    description: 'optimize files array',
+                    default: true,
+                },
+                cleanupFiles: {
+                    type: 'boolean',
+                    description: 'cleanup files not included in files array',
+                    default: true,
+                },
+            },
         },
-        flags: {
-            profile: {
-                type: String,
-                description: 'profile to use',
-                default: 'library',
-            },
-            flatten: {
-                type: FlattenParam,
-                description: 'flatten package files (comma-separated for multiple directories)',
-                default: false,
-            },
-            removeSourcemaps: {
-                type: Boolean,
-                description: 'remove sourcemaps',
-                default: false,
-            },
-            stripComments: {
-                type: StripCommentsParam,
-                description: 'strip comments: all (default), jsdoc, license, regular (comma-separated)',
-                default: false,
-            },
-            optimizeFiles: {
-                type: Boolean,
-                description: 'optimize files array',
-                default: true,
-            },
-            cleanupFiles: {
-                type: Boolean,
-                description: 'cleanup files not included in files array',
-                default: true,
-            },
-        },
-    });
+        [camelCase, optionalValue, help]
+    );
+
+    const flattenDirs = values.flatten
+        ?.flatMap(v => v.split(','))
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    const flags = {
+        ...values,
+        flatten: flattenDirs?.includes('auto') || values.flatten?.includes('') ? true : flattenDirs?.length ? flattenDirs : false,
+        stripComments: values.stripComments?.length ? values.stripComments.filter(Boolean).join(',') || 'all' : false,
+    };
 
     const pkg = await readPackage('.');
     if (!pkg) {
         throw new Error('Could not read package.json');
     }
-    await prunePkg(pkg, cliOptions.flags, logger);
+    await prunePkg(pkg, flags, logger);
 
     await writePackage(pkg);
 } catch (error) {
@@ -102,24 +120,4 @@ async function readPackage(dir) {
  */
 async function writePackage(pkg) {
     await writeFile('./package.json', `${JSON.stringify(pkg, null, 2)}\n`);
-}
-
-/**
- * @param {string | false} value
- */
-function StripCommentsParam(value) {
-    if (value === '') {
-        return 'all';
-    }
-    return value;
-}
-
-/**
- * @param {string | false} value
- */
-function FlattenParam(value) {
-    if (value === '') {
-        return true; // means auto
-    }
-    return value; // string
 }

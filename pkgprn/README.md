@@ -62,16 +62,16 @@ Additional optional features can be enabled via flags:
 
 ## Options
 
-| Flag                  | Type                | Default   | Description                                                                                                                       |
-| --------------------- | ------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `--profile`           | `string`            | `library` | Script-retention profile (`library` or `app`).                                                                                    |
-| `--flatten`           | `string \| boolean` | `false`   | Flatten dist directories to the package root. Pass without a value to auto-detect, or provide comma-separated directory names.    |
-| `--remove-sourcemaps` | `boolean`           | `false`   | Delete `.map` files and strip `sourceMappingURL` comments from source files.                                                      |
-| `--strip-comments`    | `string \| boolean` | `false`   | Strip comments from JS files. Pass without a value to strip all, or provide comma-separated types: `jsdoc`, `license`, `regular`. |
-| `--optimize-files`    | `boolean`           | `true`    | Optimize the `files` array by collapsing entries.                                                                                 |
-| `--cleanup-files`     | `boolean`           | `true`    | Remove files not listed in the `files` array.                                                                                     |
-| `--version`           |                     |           | Show version number.                                                                                                              |
-| `--help`              |                     |           | Show help message.                                                                                                                |
+| Flag                  | Type                | Default   | Description                                                                                                                                                   |
+| --------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--profile`           | `string`            | `library` | Script-retention profile (`library` or `app`).                                                                                                                |
+| `--flatten`           | `string \| boolean` | `false`   | Flatten dist directories to the package root. Pass without a value (or `auto`) to auto-detect, or provide comma-separated directory names or repeat the flag. |
+| `--remove-sourcemaps` | `boolean`           | `false`   | Delete `.map` files and strip `sourceMappingURL` comments from source files.                                                                                  |
+| `--strip-comments`    | `string \| boolean` | `false`   | Strip comments from JS files. Pass without a value to strip all, or provide comma-separated types: `jsdoc`, `license`, `regular`.                             |
+| `--optimize-files`    | `boolean`           | `true`    | Optimize the `files` array by collapsing entries.                                                                                                             |
+| `--cleanup-files`     | `boolean`           | `true`    | Remove files not listed in the `files` array.                                                                                                                 |
+| `--version`           |                     |           | Show version number.                                                                                                                                          |
+| `--help`              |                     |           | Show help message.                                                                                                                                            |
 
 ## Profiles
 
@@ -100,19 +100,21 @@ Flattening moves files from a dist directory (e.g. `dist/`) into the package roo
 
 ### Auto-detect
 
-When `--flatten` is passed without a value, `pkgprn` inspects `main`, `bin`, `module`, `exports`, `types`, and other entry-point fields to find the longest common directory prefix, and flattens that:
+When `--flatten` is passed without a value (or with `auto`), `pkgprn` inspects `main`, `bin`, `module`, `exports`, `types`, and other entry-point fields to find the longest common directory prefix, and flattens that:
 
 ```sh
 pkgprn --flatten
+pkgprn --flatten auto
 ```
 
 ### Explicit directories
 
-You can specify one or more directories to flatten (comma-separated):
+You can specify one or more directories to flatten (comma-separated or by repeating the flag):
 
 ```sh
 pkgprn --flatten dist
 pkgprn --flatten dist,lib
+pkgprn --flatten dist --flatten lib
 ```
 
 ### What flattening does
@@ -133,9 +135,10 @@ The `--strip-comments` flag removes comments from `.js`, `.mjs`, and `.cjs` file
 ### Usage
 
 ```sh
-pkgprn --strip-comments            # strip all comments
-pkgprn --strip-comments jsdoc      # strip only JSDoc comments
-pkgprn --strip-comments license,regular  # strip license and regular comments
+pkgprn --strip-comments                              # strip all comments
+pkgprn --strip-comments jsdoc                         # strip only JSDoc comments
+pkgprn --strip-comments license,regular               # strip license and regular comments
+pkgprn --strip-comments license --strip-comments regular  # same, using repeated flags
 ```
 
 ### Comment types
@@ -224,7 +227,7 @@ await prunePkg(
     pkg,
     {
         profile: "library",
-        flatten: false,
+        flatten: false, // or true for auto-detect, or ["dist"] / ["dist", "lib"]
         removeSourcemaps: false,
         stripComments: false, // or "all", "jsdoc", "license,regular", etc.
         optimizeFiles: true,
@@ -237,7 +240,7 @@ await prunePkg(
 ### `prunePkg(pkg, options, logger)`
 
 - **`pkg`** - A mutable `package.json` object. Modified in place.
-- **`options`** - An options object matching the CLI flags.
+- **`options`** - An options object matching the CLI flags. Note that `flatten` accepts `boolean | string[]` (`true` for auto-detect, or an array of directory names).
 - **`logger`** - A logger instance (from [`@niceties/logger`](https://www.npmjs.com/package/@niceties/logger)).
 
 ## Ignored Files

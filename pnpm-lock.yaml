@@ -30,11 +30,11 @@ importers:
         specifier: ^1.5.5
         version: 1.5.5
       '@niceties/logger':
-        specifier: ^1.1.13
-        version: 1.1.13
-      cleye:
-        specifier: 2.2.1
-        version: 2.2.1
+        specifier: ^2.1.0
+        version: 2.1.0
+      '@niceties/node-parseargs-plus':
+        specifier: ^0.2.1
+        version: 0.2.1
     devDependencies:
       c8:
         specifier: ^11.0.0
@@ -51,9 +51,9 @@ importers:
       '@jridgewell/sourcemap-codec':
         specifier: ^1.5.5
         version: 1.5.5
-      cleye:
-        specifier: 2.2.1
-        version: 2.2.1
+      '@niceties/node-parseargs-plus':
+        specifier: ^0.1.1
+        version: 0.1.2
       kleur:
         specifier: ^4.1.5
         version: 4.1.5
@@ -243,9 +243,29 @@ packages:
   '@manypkg/get-packages@1.1.3':
     resolution: {integrity: sha512-fo+QhuU3qE/2TQMQmbVMqaQ6EWbMhi4ABWP+O4AM1NqPBuy0OrApV5LO6BrrgnhtAHS2NH6RrVk9OL181tTi8A==}
 
+  '@niceties/ansi@1.0.0':
+    resolution: {integrity: sha512-Gs+pNnhemg3X3RWeo1atj//r4wljZ8tfCNZnM4CDy3O8YV/T46+HdmXYX7zSUN8at626bYR3tOVrulCVqSaw+w==}
+    engines: {node: '>=15'}
+
+  '@niceties/ansi@1.1.0':
+    resolution: {integrity: sha512-rRZWzr8AymcPP3/V383JHFck2Z+baa6caacRCN+Deg8VYXUHpAzhO4luntRHJTsF4AeUhXCHK3Hc42UoC3glPw==}
+    engines: {node: '>=15'}
+
   '@niceties/logger@1.1.13':
     resolution: {integrity: sha512-yorxAcjtpxCgZQy1o4Lq3Umr2rzwHyMN9dZCgZBKXIFkxlhsIH7olQFPSLJdvRmQC+4iaPFcPIq1WvN1ObtPBA==}
     engines: {node: '>=15'}
+
+  '@niceties/logger@2.1.0':
+    resolution: {integrity: sha512-yZY0M4hG7LwYc+2/1nm2FTzZG99m4fxnDSyKjENOW8PoPKw1G382VB0AQVH5h1+huFIXYGEUyuvGXpoY4CFHZA==}
+    engines: {node: '>=15'}
+
+  '@niceties/node-parseargs-plus@0.1.2':
+    resolution: {integrity: sha512-YHq8kMp1yKwovF3D38z8L1sRE57gVJxmO9kdVcfSbv4HXMPCMIznLfNdIrKCWfSESjXQV0LYXzWPW2AorRekww==}
+    engines: {node: '>=18.3.0'}
+
+  '@niceties/node-parseargs-plus@0.2.1':
+    resolution: {integrity: sha512-bEB/FkGNfBhlF1n3j0rxlhCVG6V8fQuCXCfVFBf2dYaVFwruoMZuNDg28BYcxpRXtpPREJrKhyzbLiHPmVx2Mg==}
+    engines: {node: '>=18.3.0'}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -541,9 +561,6 @@ packages:
   ci-info@3.9.0:
     resolution: {integrity: sha512-NIxF55hv4nSqQswkAeiOi1r83xy8JldOFDTWiug55KBu9Jnblncd2U6ViHmYgHf01TPZS77NJBhBMKdWj9HQMQ==}
     engines: {node: '>=8'}
-
-  cleye@2.2.1:
-    resolution: {integrity: sha512-eZzJGlG3N6+IsKV+297HIRS2fyRsLMOrx62hGUmmcyOtP/I+L7JVeSKZH49WZUdVB8NoaZOUvq01363I/PHJiA==}
 
   cli-test-helper@0.1.2:
     resolution: {integrity: sha512-YmnRR7X8qesgD9T7odmmhO9lMctEcpmIwJ3S1IHUM1L6RhcpI+Vyf8g5uklnerAut4KoPx4dbEtZOx1adXWLyw==}
@@ -979,9 +996,6 @@ packages:
     resolution: {integrity: sha512-wK0Ri4fOGjv/XPy8SBHZChl8CM7uMc5VML7SqiQ0zG7+J5Vr+RMQDoHa2CNT6KHUnTGIXH34UDMkPzAUyapBZg==}
     engines: {node: '>=8'}
 
-  terminal-columns@2.0.0:
-    resolution: {integrity: sha512-6IByuUjyNZJXUtwDNm+OIe62zgwwaRbH+WMNTcx05O2G5V9WhvluAAHJY8OvUdwmzMPpqAD/7EUpGdI6ae1aiQ==}
-
   test-exclude@8.0.0:
     resolution: {integrity: sha512-ZOffsNrXYggvU1mDGHk54I96r26P8SyMjO5slMKSc7+IWmtB/MQKnEC2fP51imB3/pT6YK5cT5E8f+Dd9KdyOQ==}
     engines: {node: 20 || >=22}
@@ -999,9 +1013,6 @@ packages:
     engines: {node: '>=16'}
     peerDependencies:
       typescript: '>=4.2.0'
-
-  type-flag@4.0.3:
-    resolution: {integrity: sha512-YA09cL07U7hSV+/doSfKl+RkIZ2olCnevZsVgAuyBUG3h2ROf9Oh2vmbq5Rf26aA9/qu9RtStuc7ap5PC6k/vw==}
 
   typescript@5.8.3:
     resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
@@ -1277,9 +1288,25 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
+  '@niceties/ansi@1.0.0': {}
+
+  '@niceties/ansi@1.1.0': {}
+
   '@niceties/logger@1.1.13':
     dependencies:
       kleur: 4.1.5
+
+  '@niceties/logger@2.1.0':
+    dependencies:
+      '@niceties/ansi': 1.0.0
+
+  '@niceties/node-parseargs-plus@0.1.2':
+    dependencies:
+      '@niceties/ansi': 1.0.0
+
+  '@niceties/node-parseargs-plus@0.2.1':
+    dependencies:
+      '@niceties/ansi': 1.1.0
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -1489,11 +1516,6 @@ snapshots:
   chardet@2.1.1: {}
 
   ci-info@3.9.0: {}
-
-  cleye@2.2.1:
-    dependencies:
-      terminal-columns: 2.0.0
-      type-flag: 4.0.3
 
   cli-test-helper@0.1.2: {}
 
@@ -1902,8 +1924,6 @@ snapshots:
 
   term-size@2.2.1: {}
 
-  terminal-columns@2.0.0: {}
-
   test-exclude@8.0.0:
     dependencies:
       '@istanbuljs/schema': 0.1.3
@@ -1922,8 +1942,6 @@ snapshots:
   ts-api-utils@1.4.3(typescript@5.8.3):
     dependencies:
       typescript: 5.8.3
-
-  type-flag@4.0.3: {}
 
   typescript@5.8.3: {}
 
