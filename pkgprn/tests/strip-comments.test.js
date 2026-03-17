@@ -37,18 +37,19 @@ function commentTypes(comments) {
 describe('parseCommentTypes', () => {
     test('true returns all types', () => {
         const s = parseCommentTypes(true);
-        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'license', 'regular']);
+        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
     });
 
     test('"all" returns all types', () => {
         const s = parseCommentTypes('all');
-        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'license', 'regular']);
+        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
     });
 
     test('single type', () => {
         assert.deepStrictEqual([...parseCommentTypes('jsdoc')], ['jsdoc']);
         assert.deepStrictEqual([...parseCommentTypes('license')], ['license']);
         assert.deepStrictEqual([...parseCommentTypes('regular')], ['regular']);
+        assert.deepStrictEqual([...parseCommentTypes('annotation')], ['annotation']);
     });
 
     test('comma-separated types', () => {
@@ -63,7 +64,7 @@ describe('parseCommentTypes', () => {
 
     test('"all" in comma list returns everything', () => {
         const s = parseCommentTypes('jsdoc,all');
-        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'license', 'regular']);
+        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
     });
 
     test('unknown type throws', () => {
@@ -72,7 +73,7 @@ describe('parseCommentTypes', () => {
 
     test('empty string falls back to all', () => {
         const s = parseCommentTypes('');
-        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'license', 'regular']);
+        assert.deepStrictEqual([...s].sort(), ['jsdoc', 'regular']);
     });
 });
 
@@ -208,9 +209,44 @@ describe('scanComments — classification', () => {
     });
 
     test('mixed comment types', () => {
-        const src = ['/*! license */', '/** @param x */', '/* regular */', '// line comment'].join('\n');
+        const src = ['/*! license */', '/** @param x */', '/* regular */', '// line comment', '/*#__PURE__*/ fn()'].join('\n');
         const comments = scanComments(src);
-        assert.deepStrictEqual(commentTypes(comments), ['license', 'jsdoc', 'regular', 'regular']);
+        assert.deepStrictEqual(commentTypes(comments), ['license', 'jsdoc', 'regular', 'regular', 'annotation']);
+    });
+
+    test('annotation comment /*#__PURE__*/', () => {
+        const src = 'const a = /*#__PURE__*/ fn();';
+        const comments = scanComments(src);
+        assert.strictEqual(comments.length, 1);
+        assert.deepStrictEqual(commentTypes(comments), ['annotation']);
+    });
+
+    test('annotation comment /*@__PURE__*/', () => {
+        const src = 'const a = /*@__PURE__*/ fn();';
+        const comments = scanComments(src);
+        assert.strictEqual(comments.length, 1);
+        assert.deepStrictEqual(commentTypes(comments), ['annotation']);
+    });
+
+    test('annotation comment /*#__NO_SIDE_EFFECTS__*/', () => {
+        const src = '/*#__NO_SIDE_EFFECTS__*/ function foo() {}';
+        const comments = scanComments(src);
+        assert.strictEqual(comments.length, 1);
+        assert.deepStrictEqual(commentTypes(comments), ['annotation']);
+    });
+
+    test('annotation with spaces around body is still annotation', () => {
+        const src = '/* #__PURE__ */ fn();';
+        const comments = scanComments(src);
+        assert.strictEqual(comments.length, 1);
+        assert.deepStrictEqual(commentTypes(comments), ['annotation']);
+    });
+
+    test('non-matching annotation pattern is regular', () => {
+        const src = '/* __PURE__ */ fn();';
+        const comments = scanComments(src);
+        assert.strictEqual(comments.length, 1);
+        assert.deepStrictEqual(commentTypes(comments), ['regular']);
     });
 });
 
@@ -730,6 +766,34 @@ describe('stripComments', () => {
         const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['regular']));
         const result = stripComments(src, types);
         assert.strictEqual(result, 'const x = 1;\n');
+    });
+
+    test('annotation comments are not stripped by default set', () => {
+        const src = 'const a = /*#__PURE__*/ fn();\n/** jsdoc */\n/* regular */\n';
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'regular']));
+        const result = stripComments(src, types);
+        assert.ok(result.includes('/*#__PURE__*/'));
+        assert.ok(!result.includes('/** jsdoc */'));
+        assert.ok(!result.includes('/* regular */'));
+    });
+
+    test('annotation comments can be explicitly stripped', () => {
+        const src = 'const a = /*#__PURE__*/ fn();\n';
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['annotation']));
+        const result = stripComments(src, types);
+        assert.ok(!result.includes('/*#__PURE__*/'));
+        assert.ok(result.includes('const a ='));
+        assert.ok(result.includes('fn();'));
+    });
+
+    test('license comments are not stripped by default set', () => {
+        const src = '/*! MIT License */\n/** jsdoc */\n/* regular */\nconst a = 1;\n';
+        const types = new Set(/** @type {import('../src/strip-comments.js').CommentType[]} */ (['jsdoc', 'regular']));
+        const result = stripComments(src, types);
+        assert.ok(result.includes('/*! MIT License */'));
+        assert.ok(!result.includes('/** jsdoc */'));
+        assert.ok(!result.includes('/* regular */'));
+        assert.ok(result.includes('const a = 1;'));
     });
 });
 

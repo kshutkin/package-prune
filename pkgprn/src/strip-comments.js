@@ -1,7 +1,7 @@
 import { decode, encode } from '@jridgewell/sourcemap-codec';
 
 /**
- * @typedef {'jsdoc' | 'license' | 'regular'} CommentType
+ * @typedef {'jsdoc' | 'license' | 'regular' | 'annotation'} CommentType
  */
 
 /**
@@ -75,6 +75,11 @@ function classifyBlockComment(source, start, end) {
     // JSDoc: starts with /** (and is not the degenerate /**/ which is length 4)
     if (source[start + 2] === '*' && end - start > 4) {
         return 'jsdoc';
+    }
+
+    // Annotation: bundler hints like /*#__PURE__*/, /*@__PURE__*/, /*#__NO_SIDE_EFFECTS__*/, etc.
+    if (/^[#@]__[A-Z_]+__$/.test(body.trim())) {
+        return 'annotation';
     }
 
     return 'regular';
@@ -438,18 +443,20 @@ function scanTemplateTail(s, i, len, templateStack, comments) {
 /**
  * Parse the `--strip-comments` flag value into a `Set` of comment types.
  *
- * - `'all'` or `true`  → `{'jsdoc', 'license', 'regular'}`
+ * - `'all'` or `true`  → `{'jsdoc', 'regular'}` (license and annotation are preserved by default)
  * - `'jsdoc,regular'`  → `{'jsdoc', 'regular'}`
+ * - `'license'`        → `{'license'}` (must be explicitly requested)
+ * - `'annotation'`     → `{'annotation'}` (must be explicitly requested)
  *
  * @param {string | true} value
  * @returns {Set<CommentType>}
  */
 export function parseCommentTypes(value) {
     if (value === true || value === 'all') {
-        return new Set(/** @type {CommentType[]} */ (['jsdoc', 'license', 'regular']));
+        return new Set(/** @type {CommentType[]} */ (['jsdoc', 'regular']));
     }
 
-    const valid = /** @type {CommentType[]} */ (['jsdoc', 'license', 'regular']);
+    const valid = /** @type {CommentType[]} */ (['jsdoc', 'license', 'regular', 'annotation']);
     const parts = String(value)
         .split(',')
         .map(s => s.trim())
@@ -460,7 +467,7 @@ export function parseCommentTypes(value) {
 
     for (const part of parts) {
         if (part === 'all') {
-            return new Set(valid);
+            return new Set(/** @type {CommentType[]} */ (['jsdoc', 'regular']));
         }
         if (!valid.includes(/** @type {CommentType} */ (part))) {
             throw new Error(`unknown comment type "${part}" (expected: ${valid.join(', ')}, all)`);
@@ -469,7 +476,7 @@ export function parseCommentTypes(value) {
     }
 
     if (result.size === 0) {
-        return new Set(valid); // fallback to all
+        return new Set(/** @type {CommentType[]} */ (['jsdoc', 'regular'])); // fallback to default
     }
 
     return result;

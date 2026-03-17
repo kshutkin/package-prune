@@ -51,7 +51,7 @@ try {
                     type: 'string',
                     multiple: true,
                     optionalValue: true,
-                    description: 'strip comments: all (default), jsdoc, license, regular',
+                    description: 'strip comments: all (default: jsdoc,regular), jsdoc, license, regular, annotation',
                 },
                 optimizeFiles: {
                     type: 'boolean',

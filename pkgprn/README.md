@@ -62,16 +62,16 @@ Additional optional features can be enabled via flags:
 
 ## Options
 
-| Flag                  | Type                | Default   | Description                                                                                                                                                   |
-| --------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--profile`           | `string`            | `library` | Script-retention profile (`library` or `app`).                                                                                                                |
-| `--flatten`           | `string \| boolean` | `false`   | Flatten dist directories to the package root. Pass without a value (or `auto`) to auto-detect, or provide comma-separated directory names or repeat the flag. |
-| `--remove-sourcemaps` | `boolean`           | `false`   | Delete `.map` files and strip `sourceMappingURL` comments from source files.                                                                                  |
-| `--strip-comments`    | `string \| boolean` | `false`   | Strip comments from JS files. Pass without a value to strip all, or provide comma-separated types: `jsdoc`, `license`, `regular`.                             |
-| `--optimize-files`    | `boolean`           | `true`    | Optimize the `files` array by collapsing entries.                                                                                                             |
-| `--cleanup-files`     | `boolean`           | `true`    | Remove files not listed in the `files` array.                                                                                                                 |
-| `--version`           |                     |           | Show version number.                                                                                                                                          |
-| `--help`              |                     |           | Show help message.                                                                                                                                            |
+| Flag                  | Type                | Default   | Description                                                                                                                                                            |
+| --------------------- | ------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--profile`           | `string`            | `library` | Script-retention profile (`library` or `app`).                                                                                                                         |
+| `--flatten`           | `string \| boolean` | `false`   | Flatten dist directories to the package root. Pass without a value (or `auto`) to auto-detect, or provide comma-separated directory names or repeat the flag.          |
+| `--remove-sourcemaps` | `boolean`           | `false`   | Delete `.map` files and strip `sourceMappingURL` comments from source files.                                                                                           |
+| `--strip-comments`    | `string \| boolean` | `false`   | Strip comments from JS files. Pass without a value to strip JSDoc and regular comments, or provide comma-separated types: `jsdoc`, `license`, `regular`, `annotation`. |
+| `--optimize-files`    | `boolean`           | `true`    | Optimize the `files` array by collapsing entries.                                                                                                                      |
+| `--cleanup-files`     | `boolean`           | `true`    | Remove files not listed in the `files` array.                                                                                                                          |
+| `--version`           |                     |           | Show version number.                                                                                                                                                   |
+| `--help`              |                     |           | Show help message.                                                                                                                                                     |
 
 ## Profiles
 
@@ -135,21 +135,23 @@ The `--strip-comments` flag removes comments from `.js`, `.mjs`, and `.cjs` file
 ### Usage
 
 ```sh
-pkgprn --strip-comments                              # strip all comments
-pkgprn --strip-comments jsdoc                         # strip only JSDoc comments
-pkgprn --strip-comments license,regular               # strip license and regular comments
-pkgprn --strip-comments license --strip-comments regular  # same, using repeated flags
+pkgprn --strip-comments                                    # strip JSDoc and regular comments (default)
+pkgprn --strip-comments jsdoc                               # strip only JSDoc comments
+pkgprn --strip-comments jsdoc,license,regular,annotation    # strip all comment types
+pkgprn --strip-comments license                             # strip only license comments
+pkgprn --strip-comments annotation                          # strip only annotation comments
 ```
 
 ### Comment types
 
-| Type      | Description                                        |
-| --------- | -------------------------------------------------- |
-| `jsdoc`   | `/** … */` documentation comments                  |
-| `license` | Comments containing "license", "copyright", or "©" |
-| `regular` | All other `//` and `/* … */` comments              |
+| Type         | Description                                                                           | Stripped by default |
+| ------------ | ------------------------------------------------------------------------------------- | ------------------- |
+| `jsdoc`      | `/** … */` documentation comments                                                     | ✓                   |
+| `regular`    | All other `//` and `/* … */` comments                                                 | ✓                   |
+| `license`    | `/*! … */` or comments containing `@license` / `@preserve`                            |                     |
+| `annotation` | Bundler annotations like `/*#__PURE__*/`, `/*@__PURE__*/`, `/*#__NO_SIDE_EFFECTS__*/` |                     |
 
-Passing `--strip-comments` without a value (or with `all`) strips every type.
+Passing `--strip-comments` without a value (or with `all`) strips `jsdoc` and `regular` comments. License and annotation comments are preserved by default — specify them explicitly to strip them.
 
 ### Sourcemap adjustment
 
@@ -229,7 +231,7 @@ await prunePkg(
         profile: "library",
         flatten: false, // or true for auto-detect, or ["dist"] / ["dist", "lib"]
         removeSourcemaps: false,
-        stripComments: false, // or "all", "jsdoc", "license,regular", etc.
+        stripComments: false, // or "all" (jsdoc+regular), "jsdoc", "license", "annotation", etc.
         optimizeFiles: true,
         cleanupFiles: true,
     },
