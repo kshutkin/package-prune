@@ -1,5 +1,15 @@
 # pkgprn-internal
 
+## 0.8.0
+
+### Minor Changes
+
+- d9cb6cd: huge refactoring
+
+### Patch Changes
+
+- 97b496c: remove inlined dependency
+
 ## 0.7.0
 
 ### Minor Changes

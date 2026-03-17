@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.8.0
+
+### Minor Changes
+
+- d9cb6cd: huge refactoring
+
 ## 0.7.0
 
 ### Minor Changes
