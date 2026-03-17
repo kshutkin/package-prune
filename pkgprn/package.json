@@ -43,7 +43,7 @@
     "dependencies": {
         "@jridgewell/sourcemap-codec": "^1.5.5",
         "@niceties/logger": "^2.1.0",
-        "@niceties/node-parseargs-plus": "^0.2.1"
+        "@niceties/node-parseargs-plus": "^0.3.0"
     },
     "devDependencies": {
         "c8": "^11.0.0",
