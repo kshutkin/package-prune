@@ -26,7 +26,7 @@
         "@jridgewell/sourcemap-codec": "^1.5.5"
     },
     "devDependencies": {
-        "@niceties/logger": "^1.1.13",
+        "@niceties/logger": "^2.0.0",
         "rollup": "^4.34.7",
         "@rollup/plugin-commonjs": "^29.0.0",
         "@rollup/plugin-node-resolve": "^16.0.0",
