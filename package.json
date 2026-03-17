@@ -13,7 +13,7 @@
     },
     "devDependencies": {
         "@biomejs/biome": "2.4.4",
-        "@changesets/cli": "2.29.8",
+        "@changesets/cli": "2.30.0",
         "@types/node": "24.x",
         "dts-buddy": "^0.7.0"
     }
