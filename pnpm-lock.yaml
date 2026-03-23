@@ -56,8 +56,8 @@ importers:
         version: 4.1.5
     devDependencies:
       '@rollup-extras/plugin-clean':
-        specifier: ^1.3.8
-        version: 1.3.9(rollup@4.59.0)
+        specifier: ^2.0.0
+        version: 2.0.0(rollup@4.59.0)
       '@rollup-extras/plugin-externals':
         specifier: ^1.2.0
         version: 1.2.2(rollup@4.59.0)
@@ -265,11 +265,11 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@rollup-extras/plugin-clean@1.3.9':
-    resolution: {integrity: sha512-BxJrxI5iq/hpTTfp2VVjfgzuDKtcpUDLwDPXByLLz1CnReDnzPlHTqxHpOdWDv8L26yjuAagnoDPTxIW6NrUmw==}
+  '@rollup-extras/plugin-clean@2.0.0':
+    resolution: {integrity: sha512-Kjr0QNx0dqK7RQUmxjRizaNKOvMduqVMvl9juNuODLGvtNN2wbnSyM1JVIcR+0OBCNTWdSQIliUgG8c1cel08w==}
     engines: {node: '>=15'}
     peerDependencies:
-      rollup: ^2.60.1 || ^3.0.0 || ^4.0.0
+      rollup: ^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -288,6 +288,15 @@ packages:
     engines: {node: '>=15'}
     peerDependencies:
       rollup: ^2.60.1 || ^3.0.0 || ^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
+  '@rollup-extras/utils@2.0.0':
+    resolution: {integrity: sha512-20/JAVzvQPvuTNIYnvSDq+BIH28iks1VnjT5RPJuI4SXcfSZtruV57Asw3++mjmJbhOihx8UdfFC3QVzuux3rw==}
+    engines: {node: '>=15'}
+    peerDependencies:
+      rollup: ^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1300,10 +1309,10 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@rollup-extras/plugin-clean@1.3.9(rollup@4.59.0)':
+  '@rollup-extras/plugin-clean@2.0.0(rollup@4.59.0)':
     dependencies:
-      '@niceties/logger': 1.1.13
-      '@rollup-extras/utils': 1.4.6(rollup@4.59.0)
+      '@niceties/logger': 2.1.0
+      '@rollup-extras/utils': 2.0.0(rollup@4.59.0)
     optionalDependencies:
       rollup: 4.59.0
 
@@ -1319,6 +1328,12 @@ snapshots:
   '@rollup-extras/utils@1.4.6(rollup@4.59.0)':
     dependencies:
       '@niceties/logger': 1.1.13
+    optionalDependencies:
+      rollup: 4.59.0
+
+  '@rollup-extras/utils@2.0.0(rollup@4.59.0)':
+    dependencies:
+      '@niceties/logger': 2.1.0
     optionalDependencies:
       rollup: 4.59.0
 
