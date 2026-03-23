@@ -59,8 +59,8 @@ importers:
         specifier: ^1.3.8
         version: 1.3.9(rollup@4.59.0)
       '@rollup-extras/plugin-externals':
-        specifier: ^1.2.0
-        version: 1.2.2(rollup@4.59.0)
+        specifier: ^2.0.0
+        version: 2.0.0(rollup@4.59.0)
       '@rollup/plugin-commonjs':
         specifier: ^29.0.0
         version: 29.0.0(rollup@4.59.0)
@@ -274,11 +274,11 @@ packages:
       rollup:
         optional: true
 
-  '@rollup-extras/plugin-externals@1.2.2':
-    resolution: {integrity: sha512-6I53ViN6IKez+RetiJXQ3BPHhSv+JyhB2HrfjjeDRPknaId5+MzMJ52n5bsbDTb8ZPTvPwrvU9XmRH30Emd6Cw==}
+  '@rollup-extras/plugin-externals@2.0.0':
+    resolution: {integrity: sha512-rgrAlR6WdXnWRF4rOCWcEtciX6/CUHfVXp8RGWRwAjZLP1oRM65LXjF+B4BiENq0Tk8x5ObkEzHuMnV/YmqWbg==}
     engines: {node: '>=15'}
     peerDependencies:
-      rollup: ^2.60.1 || ^3.0.0 || ^4.0.0
+      rollup: ^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -288,6 +288,15 @@ packages:
     engines: {node: '>=15'}
     peerDependencies:
       rollup: ^2.60.1 || ^3.0.0 || ^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
+  '@rollup-extras/utils@2.0.0':
+    resolution: {integrity: sha512-20/JAVzvQPvuTNIYnvSDq+BIH28iks1VnjT5RPJuI4SXcfSZtruV57Asw3++mjmJbhOihx8UdfFC3QVzuux3rw==}
+    engines: {node: '>=15'}
+    peerDependencies:
+      rollup: ^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -523,10 +532,6 @@ packages:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
     engines: {node: '>=8'}
 
-  builtin-modules@3.3.0:
-    resolution: {integrity: sha512-zhaCDicdLuWN5UbN5IMnFqNMhNfo919sH85y2/ea+5Yg9TsTkeZxpL+JLbp6cgYFS4sRLp3YV4S6yDuqVWHYOw==}
-    engines: {node: '>=6'}
-
   builtin-modules@5.0.0:
     resolution: {integrity: sha512-bkXY9WsVpY7CvMhKSR6pZilZu9Ln5WDrKVBUXf2S443etkmEO4V58heTecXcUIsNsi4Rx8JUO4NfX1IcQl4deg==}
     engines: {node: '>=18.20'}
@@ -625,6 +630,10 @@ packages:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
 
+  find-up-simple@1.0.1:
+    resolution: {integrity: sha512-afd4O7zpqHeRyg4PfDQsXmlDe2PfdHtJt6Akt8jOWaApLOZk5JXs6VMR29lz03pRe9mpykrRCYIYxaJYcfpncQ==}
+    engines: {node: '>=18'}
+
   find-up@4.1.0:
     resolution: {integrity: sha512-PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw==}
     engines: {node: '>=8'}
@@ -698,10 +707,6 @@ packages:
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
-
-  is-builtin-module@3.2.1:
-    resolution: {integrity: sha512-BSLE3HnV2syZ0FK0iMA/yUGplUeMmNz4AW5fnTunbCIqZi4vG3WjJT9FHMy5D69xmAYBHXQhJdALdpwVxV501A==}
-    engines: {node: '>=6'}
 
   is-builtin-module@5.0.0:
     resolution: {integrity: sha512-f4RqJKBUe5rQkJ2eJEJBXSticB3hGbN9j0yxxMQFqIW89Jp9WYFtzfTcRlstDKVUTRzSOTLKRfO9vIztenwtxA==}
@@ -880,9 +885,10 @@ packages:
     resolution: {integrity: sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==}
     engines: {node: '>=6'}
 
-  pkg-dir@5.0.0:
-    resolution: {integrity: sha512-NPE8TDbzl/3YQYY7CSS228s3g2ollTFnc+Qi3tqmqJp9Vg2ovUpixcJEo2HJScN2Ez+kEaal6y70c0ehqJBJeA==}
-    engines: {node: '>=10'}
+  pkg-dir@9.0.0:
+    resolution: {integrity: sha512-BMmxOuokumBehLGYwCKMBJxpAGSBbvGTtDn1yUV9UpCAvC4F7UWHoPTGSDGPV8eQPkYq/G8b0g1W5vIc5K/EhA==}
+    engines: {node: '>=18'}
+    deprecated: Renamed to `package-directory`.
 
   prettier@2.8.8:
     resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
@@ -1307,18 +1313,24 @@ snapshots:
     optionalDependencies:
       rollup: 4.59.0
 
-  '@rollup-extras/plugin-externals@1.2.2(rollup@4.59.0)':
+  '@rollup-extras/plugin-externals@2.0.0(rollup@4.59.0)':
     dependencies:
-      '@niceties/logger': 1.1.13
-      '@rollup-extras/utils': 1.4.6(rollup@4.59.0)
-      is-builtin-module: 3.2.1
-      pkg-dir: 5.0.0
+      '@niceties/logger': 2.1.0
+      '@rollup-extras/utils': 2.0.0(rollup@4.59.0)
+      is-builtin-module: 5.0.0
+      pkg-dir: 9.0.0
     optionalDependencies:
       rollup: 4.59.0
 
   '@rollup-extras/utils@1.4.6(rollup@4.59.0)':
     dependencies:
       '@niceties/logger': 1.1.13
+    optionalDependencies:
+      rollup: 4.59.0
+
+  '@rollup-extras/utils@2.0.0(rollup@4.59.0)':
+    dependencies:
+      '@niceties/logger': 2.1.0
     optionalDependencies:
       rollup: 4.59.0
 
@@ -1475,8 +1487,6 @@ snapshots:
     dependencies:
       fill-range: 7.1.1
 
-  builtin-modules@3.3.0: {}
-
   builtin-modules@5.0.0: {}
 
   c8@11.0.0:
@@ -1570,6 +1580,8 @@ snapshots:
     dependencies:
       to-regex-range: 5.0.1
 
+  find-up-simple@1.0.1: {}
+
   find-up@4.1.0:
     dependencies:
       locate-path: 5.0.0
@@ -1642,10 +1654,6 @@ snapshots:
       safer-buffer: 2.1.2
 
   ignore@5.3.2: {}
-
-  is-builtin-module@3.2.1:
-    dependencies:
-      builtin-modules: 3.3.0
 
   is-builtin-module@5.0.0:
     dependencies:
@@ -1793,9 +1801,9 @@ snapshots:
 
   pify@4.0.1: {}
 
-  pkg-dir@5.0.0:
+  pkg-dir@9.0.0:
     dependencies:
-      find-up: 5.0.0
+      find-up-simple: 1.0.1
 
   prettier@2.8.8: {}
 
