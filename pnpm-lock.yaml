@@ -31,7 +31,7 @@ importers:
         version: 1.5.5
       '@niceties/logger':
         specifier: ^2.1.0
-        version: 2.1.0
+        version: 2.1.1
       '@niceties/node-parseargs-plus':
         specifier: ^0.5.0
         version: 0.5.0
@@ -241,12 +241,16 @@ packages:
     resolution: {integrity: sha512-4nQvmZqQxfBFGZbF15EKGOUbmsAMEPSsmv3RupWP7YvBKBky51+y4QmqEhJ3fAqpriIQW4x5krAOQppbPEgKfw==}
     engines: {node: '>=15'}
 
+  '@niceties/ansi@1.1.2':
+    resolution: {integrity: sha512-4SZgmseZqfGAIrcXmfVes+Uj51KMUQNZ3X31faRB8g2tyebDzW+zlkeg1qmhilrgJOi3nm6EOMlkfJVrgiBzZg==}
+    engines: {node: '>=15'}
+
   '@niceties/logger@1.1.13':
     resolution: {integrity: sha512-yorxAcjtpxCgZQy1o4Lq3Umr2rzwHyMN9dZCgZBKXIFkxlhsIH7olQFPSLJdvRmQC+4iaPFcPIq1WvN1ObtPBA==}
     engines: {node: '>=15'}
 
-  '@niceties/logger@2.1.0':
-    resolution: {integrity: sha512-yZY0M4hG7LwYc+2/1nm2FTzZG99m4fxnDSyKjENOW8PoPKw1G382VB0AQVH5h1+huFIXYGEUyuvGXpoY4CFHZA==}
+  '@niceties/logger@2.1.1':
+    resolution: {integrity: sha512-taqDVn4TRCh3j5QJQNlWKE9MSHxGh7nr9zE8SkdHMvsijp6Vx6qd3XYSV7bF7nnYYC/JYjJILxfqDeEUeEjtfQ==}
     engines: {node: '>=15'}
 
   '@niceties/node-parseargs-plus@0.5.0':
@@ -1276,13 +1280,15 @@ snapshots:
 
   '@niceties/ansi@1.1.1': {}
 
+  '@niceties/ansi@1.1.2': {}
+
   '@niceties/logger@1.1.13':
     dependencies:
       kleur: 4.1.5
 
-  '@niceties/logger@2.1.0':
+  '@niceties/logger@2.1.1':
     dependencies:
-      '@niceties/ansi': 1.1.1
+      '@niceties/ansi': 1.1.2
 
   '@niceties/node-parseargs-plus@0.5.0':
     dependencies:
