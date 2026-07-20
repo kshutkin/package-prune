@@ -21,8 +21,8 @@ importers:
         specifier: 24.x
         version: 24.11.0
       dts-buddy:
-        specifier: ^0.7.0
-        version: 0.7.0(typescript@5.8.3)
+        specifier: ^0.8.0
+        version: 0.8.3(typescript@5.8.3)
 
   pkgprn:
     dependencies:
@@ -43,8 +43,8 @@ importers:
         specifier: ^0.1.2
         version: 0.1.2
       dts-buddy:
-        specifier: ^0.7.0
-        version: 0.7.0(typescript@5.8.3)
+        specifier: ^0.8.0
+        version: 0.8.3(typescript@5.8.3)
 
   pkgprn-internal:
     dependencies:
@@ -577,11 +577,11 @@ packages:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
     engines: {node: '>=8'}
 
-  dts-buddy@0.7.0:
-    resolution: {integrity: sha512-smcL+Hg0HTt83U2rhBiqUaPRdPBTONItZU1rF42zBffHobyQird6/R/QcGFguem4aCrRwBozoz4l4KtMYcXEKA==}
+  dts-buddy@0.8.3:
+    resolution: {integrity: sha512-1x/UrAYRlQYA7QeLjyiTo5x6u5FvsU2hheGXT/hJWJ1zQzR+dMSQMMGPmuSKAH4/rhdCuLAtUZUr+NIXubwjfQ==}
     hasBin: true
     peerDependencies:
-      typescript: '>=5.0.4 <6'
+      typescript: ^5.0.4 || ^6.0.0
 
   emoji-regex@10.6.0:
     resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==}
@@ -1523,7 +1523,7 @@ snapshots:
     dependencies:
       path-type: 4.0.0
 
-  dts-buddy@0.7.0(typescript@5.8.3):
+  dts-buddy@0.8.3(typescript@5.8.3):
     dependencies:
       '@jridgewell/source-map': 0.3.11
       '@jridgewell/sourcemap-codec': 1.5.5
