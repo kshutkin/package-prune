@@ -326,6 +326,12 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
         distDirs = flatten.map(d => normalizePath(d.trim())).filter(Boolean);
     }
 
+    distDirs = [...new Set(distDirs)];
+    for (const [index, dir] of distDirs.entries()) {
+        if (distDirs.slice(index + 1).some(other => isSubDirectory(dir, other) || isSubDirectory(other, dir))) {
+            throw new Error('cannot flatten overlapping source directories');
+        }
+    }
     logger.update(`flattening ${distDirs.join(', ')}...`);
 
     // collect files from all dist directories
@@ -346,6 +352,8 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
 
     /** @type {Map<string, string>} */
     const destinationToSource = new Map();
+    /** @type {Set<string>} */
+    const destinationDirs = new Set();
     const existsPromises = [];
     /** @type {string[]} */
     const existsKeys = [];
@@ -359,6 +367,15 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
                 const otherDir = destinationToSource.get(relativePath);
                 throw new Error(`cannot flatten because '${relativePath}' exists in both '${otherDir}' and '${distDir}'`);
             }
+            if (destinationDirs.has(relativePath)) {
+                throw new Error(`cannot flatten because a destination is both a file and a directory: ${relativePath}`);
+            }
+            for (let parent = path.dirname(relativePath); parent !== '.'; parent = path.dirname(parent)) {
+                if (destinationToSource.has(parent)) {
+                    throw new Error(`cannot flatten because a destination is both a file and a directory: ${parent}`);
+                }
+                destinationDirs.add(parent);
+            }
             destinationToSource.set(relativePath, distDir);
 
             // check if file already exists in root
@@ -367,6 +384,11 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
         }
     }
 
+    for (const dir of destinationDirs) {
+        if ((await isExists(dir)) && !(await isDirectory(dir))) {
+            throw new Error(`cannot flatten through a non-directory or symlink destination: ${dir}`);
+        }
+    }
     const exists = await Promise.all(existsPromises);
 
     const filesAlreadyExist = exists.filter(Boolean);

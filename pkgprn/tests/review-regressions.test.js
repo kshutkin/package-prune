@@ -83,3 +83,23 @@ test('flatten preserves package-local private imports and external targets', asy
     assert.deepEqual((await fixture.pkg()).imports, { '#private': { default: './private.js' }, '#external': 'node:fs' });
     assert.equal((await fixture.node('index.js')).stdout.trim(), '42');
 });
+
+for (const overlap of [true, false]) {
+    test(`flatten rejects structural conflicts before moving files, overlap=${overlap}`, async t => {
+        const files = overlap ? { 'dist/sub/index.js': 'original' } : { 'dist/a': 'first', 'lib/a/b.js': 'second' };
+        const fixture = await packageFixture(t, {}, files);
+        await assert.rejects(fixture.run(overlap ? '--flatten=dist,dist/sub' : '--flatten=dist,lib'));
+        for (const [file, content] of Object.entries(files)) assert.equal(await fixture.read(file), content);
+        await assert.rejects(fixture.read(overlap ? 'sub/index.js' : 'a/b.js'), { code: 'ENOENT' });
+    });
+}
+
+test('flatten rejects symlink destination ancestors', async t => {
+    const external = await mkdtemp(path.join(tmpdir(), 'pkgprn-external-'));
+    t.after(() => rm(external, { recursive: true, force: true }));
+    const fixture = await packageFixture(t, {}, { 'dist/a/b.js': 'original' });
+    await symlink(external, path.join(fixture.cwd, 'a'));
+    await assert.rejects(fixture.run('--flatten=dist'));
+    assert.equal(await fixture.read('dist/a/b.js'), 'original');
+    await assert.rejects(readFile(path.join(external, 'b.js')), { code: 'ENOENT' });
+});
