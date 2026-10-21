@@ -1,4 +1,4 @@
-import { access, glob as fsGlob, lstat, mkdir, readdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
+import { access, lstat, mkdir, readdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Minimatch } from 'minimatch';
@@ -759,42 +759,29 @@ function isAlwaysIncludedByBasename(file) {
 }
 
 /**
- * Returns true if the string contains glob special characters.
- * @param {string} str
- * @returns {boolean}
- */
-function isGlobPattern(str) {
-    return /[*?[\]{}]/.test(str);
-}
-
-/**
- * Resolves files globs and negated exclusions using Node's built-in fs.glob.
- * Directory entries remain intact unless exclusions require individual files.
+ * Resolve npm-style whitelist rules in order, including dotfiles and directory contents.
  * @param {string[]} files
  * @returns {Promise<string[]>}
  */
 async function expandFileGlobs(files) {
-    const exclude = files.filter(entry => entry.startsWith('!')).map(entry => entry.slice(1));
-    const included = files.filter(entry => !entry.startsWith('!'));
-    // npm exclusions include dotfiles, unlike Node glob's default matching.
-    const excluded = exclude.flatMap(pattern => [pattern, `${pattern}/**`]).map(pattern => new Minimatch(pattern, { dot: true }));
-    /** @type {string[]} */
-    const result = [];
-    for (const entry of included) {
-        const matches = isGlobPattern(entry) || exclude.length ? fsGlob(entry, { exclude }) : [entry];
-        for await (const match of matches) {
-            // Expand included directories only when exclusions require granular cleanup.
-            // Complete traversal retains hidden files that a globstar would skip.
-            const candidates = exclude.length && (await isDirectory(match)) ? await walkDir(match, ['node_modules', '.git']) : [match];
-            for (const candidate of candidates) {
-                const file = normalizePath(candidate);
-                if (!excluded.some(pattern => pattern.match(file.split(path.sep).join('/')))) {
-                    result.push(file);
-                }
-            }
+    const rules = files.map(entry => {
+        const exclude = entry.startsWith('!');
+        const pattern = (exclude ? entry.slice(1) : entry).replace(/^(?:\.\/)+/, '').replace(/\/+$/, '');
+        const options = { dot: true, nonegate: true, nocomment: true };
+        return { exclude, matcher: new Minimatch(pattern, options), contents: new Minimatch(`${pattern}/**`, options) };
+    });
+    // Literal whitelist entries already preserve directory and npmignore semantics.
+    if (rules.every(rule => !rule.exclude && !rule.matcher.hasMagic())) return files;
+
+    const inventory = await walkDir('.', ['node_modules', '.git'], false);
+    return inventory.filter(file => {
+        const candidate = normalizePath(file).split(path.sep).join('/');
+        let included = false;
+        for (const rule of rules) {
+            if (rule.matcher.match(candidate) || rule.contents.match(candidate)) included = !rule.exclude;
         }
-    }
-    return [...new Set(result)];
+        return included;
+    });
 }
 
 /**

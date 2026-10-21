@@ -27,3 +27,26 @@ for (const operation of ['cleanup', 'comments', 'maps', 'flatten']) {
         assert.equal(await readFile(path.join(external, 'private.js'), 'utf8'), 'private');
     });
 }
+
+for (const files of [['dist/**/*.js'], ['dist', '!dist/*.map', 'dist/keep.map'], ['dist/@(a|b).js']]) {
+    for (const cleanup of [true, false]) {
+        test(`ordered whitelist ${JSON.stringify(files)} matches npm with cleanup=${cleanup}`, async t => {
+            const fixture = await packageFixture(
+                t,
+                { name: 'fixture', version: '1.0.0', files },
+                {
+                    'dist/a.js': '',
+                    'dist/b.js': '',
+                    'dist/c.js': '',
+                    'dist/.hidden.js': '',
+                    'dist/.hidden/index.js': '',
+                    'dist/keep.map': '',
+                    'dist/drop.map': '',
+                }
+            );
+            const before = await fixture.pack();
+            await fixture.run(...(cleanup ? [] : ['--no-cleanup-files']));
+            assert.deepEqual(await fixture.pack(), before);
+        });
+    }
+}
