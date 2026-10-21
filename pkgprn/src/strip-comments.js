@@ -12,8 +12,12 @@ import { decode, encode } from '@jridgewell/sourcemap-codec';
  */
 
 /**
+ * @typedef {{ line: number, column: number }} SourcePosition
+ * @typedef {(line: number, column: number) => SourcePosition | null} PositionMapper
+ *
  * @typedef {Object} StripResult
  * @property {string} result - The stripped source text
+ * @property {PositionMapper | null} mapPosition - Maps original source positions to stripped positions.
  * @property {Int32Array | null} lineMap - Maps 0-based original line → 0-based new line (-1 if removed). null when nothing changed.
  */
 
@@ -540,12 +544,7 @@ export function stripComments(source, typesToStrip) {
  * @returns {StripResult}
  */
 export function stripCommentsWithLineMap(source, typesToStrip) {
-    const comments = scanComments(source);
-
-    if (comments.length === 0) return { result: source, lineMap: null };
-
-    // Filter to only the comments we want to remove.
-    const toRemove = comments
+    const toRemove = scanComments(source)
         .filter(c => typesToStrip.has(c.type) && !isSourceMappingComment(source.slice(c.start, c.end)))
         .map(comment => ({
             ...comment,
@@ -555,152 +554,82 @@ export function stripCommentsWithLineMap(source, typesToStrip) {
                   ? ''
                   : ' ',
         }));
+    if (toRemove.length === 0) return { result: source, lineMap: null, mapPosition: null };
 
-    if (toRemove.length === 0) return { result: source, lineMap: null };
-
-    // Build output by copying non-removed ranges.
-    /** @type {string[]} */
-    const parts = [];
-    let pos = 0;
-
-    for (const { start, end, replacement } of toRemove) {
-        if (start > pos) {
-            parts.push(source.slice(pos, start));
+    let result = source;
+    /** @type {((offset: number) => number | null)[]} */
+    const stages = [];
+    /** @param {{start: number, end: number, replacement: string}[]} edits */
+    function apply(edits) {
+        if (!edits.length) return;
+        let output = '';
+        let cursor = 0;
+        for (const edit of edits) {
+            output += result.slice(cursor, edit.start) + edit.replacement;
+            cursor = edit.end;
         }
-        parts.push(replacement);
-        pos = end;
+        result = output + result.slice(cursor);
+        stages.push(offset => {
+            let delta = 0;
+            for (const edit of edits) {
+                if (offset < edit.start) break;
+                if (offset < edit.end) return null;
+                delta += edit.replacement.length - (edit.end - edit.start);
+            }
+            return offset + delta;
+        });
+    }
+    apply(toRemove);
+
+    /** @type {{start: number, end: number}[]} */
+    const literals = [];
+    scanComments(result, literals);
+    apply(
+        [...result.matchAll(/[ \t]+$|\n{3,}/gm)]
+            .filter(match => !literals.some(({ start, end }) => match.index < end && match.index + match[0].length > start))
+            .map(match => ({
+                start: match.index,
+                end: match.index + match[0].length,
+                replacement: match[0].startsWith('\n') ? '\n\n' : '',
+            }))
+    );
+
+    const firstLine = result.startsWith('#!') ? result.indexOf('\n') + 1 : 0;
+    const leading = /^\n+/.exec(result.slice(firstLine));
+    if (leading) apply([{ start: firstLine, end: firstLine + leading[0].length, replacement: '' }]);
+    if (source.endsWith('\n') && result.length) {
+        const trailing = /\n*$/.exec(result);
+        if (trailing && trailing[0] !== '\n') apply([{ start: trailing.index, end: result.length, replacement: '\n' }]);
     }
 
-    if (pos < source.length) {
-        parts.push(source.slice(pos));
-    }
-
-    let intermediate = parts.join('');
-
-    // --- Build original-line → intermediate-line mapping -------------------
-    // For every original offset, compute how many bytes were removed before it.
-    // Then convert original line-start offsets to intermediate offsets and
-    // derive intermediate line numbers.
-
-    const origLines = source.split('\n');
-    const origLineCount = origLines.length;
-
-    // Build sorted prefix-sum of removed byte counts for fast lookup.
-    // removedBefore(offset) = total chars removed in ranges fully before offset.
-    // We also detect if an offset falls inside a removed range.
-
-    /**
-     * Translate an original offset to an intermediate offset.
-     * Returns -1 if the offset is inside a removed range.
-     * @param {number} offset
-     * @returns {number}
-     */
-    function translateOffset(offset) {
-        let removed = 0;
-        for (const { start, end, replacement } of toRemove) {
-            if (offset < start) break;
-            if (offset < end) return -1; // inside removed range
-            removed += end - start - replacement.length;
+    const originalStarts = buildLineStarts(source);
+    const finalStarts = buildLineStarts(result);
+    /** @type {PositionMapper} */
+    const mapPosition = (line, column) => {
+        if (originalStarts[line] === undefined || column < 0) return null;
+        let offset = originalStarts[line] + column;
+        if (offset > source.length || offset >= (originalStarts[line + 1] ?? source.length + 1)) return null;
+        for (const stage of stages) {
+            const mapped = stage(offset);
+            if (mapped === null) return null;
+            offset = mapped;
         }
-        return offset - removed;
-    }
-
-    // For each original line, figure out which intermediate line it maps to.
-    // An original line maps to -1 if its entire non-whitespace content was
-    // inside removed ranges (i.e. the line becomes blank/whitespace-only).
-    const intermediateText = intermediate;
-    const intermediateLineStarts = buildLineStarts(intermediateText);
-
-    /** @type {Int32Array} */
-    const origToIntermediate = new Int32Array(origLineCount).fill(-1);
-    let origOffset = 0;
-    for (let oi = 0; oi < origLineCount; oi++) {
-        const lineLen = origLines[oi].length;
-        // Check if any content on this line survives.
-        // We try the line-start offset; if it's inside a removed range
-        // the whole beginning is gone, but content may survive later.
-        // The most reliable way: translate the offset of each non-WS char.
-        let survived = false;
-        for (let ci = 0; ci < lineLen; ci++) {
-            const ch = source.charCodeAt(origOffset + ci);
-            // skip whitespace chars — they don't count as surviving content
-            if (ch === 0x20 || ch === 0x09 || ch === 0x0d) continue;
-            const mapped = translateOffset(origOffset + ci);
-            if (mapped !== -1) {
-                survived = true;
-                // Convert intermediate offset to intermediate line number.
-                origToIntermediate[oi] = offsetToLine(intermediateLineStarts, mapped);
+        const finalLine = offsetToLine(finalStarts, offset);
+        return { line: finalLine, column: offset - finalStarts[finalLine] };
+    };
+    const lineMap = new Int32Array(originalStarts.length).fill(-1);
+    for (const [line, start] of originalStarts.entries()) {
+        const end = originalStarts[line + 1] ?? source.length;
+        for (let offset = start; offset < end; offset++) {
+            if (/\s/.test(source[offset])) continue;
+            const mapped = mapPosition(line, offset - start);
+            if (mapped) {
+                lineMap[line] = mapped.line;
                 break;
             }
         }
-        if (!survived) {
-            origToIntermediate[oi] = -1;
-        }
-        origOffset += lineLen + 1; // +1 for the '\n' (split removed it)
     }
-
-    // --- Apply cleanup (same logic as before) ------------------------------
-
-    /** @type {{ start: number, end: number }[]} */
-    const literals = [];
-    scanComments(intermediate, literals);
-    intermediate = intermediate.replace(/[ \t]+$|\n{3,}/gm, (whitespace, offset) => {
-        if (literals.some(({ start, end }) => offset < end && offset + whitespace.length > start)) {
-            return whitespace;
-        }
-        return whitespace.startsWith('\n') ? '\n\n' : '';
-    });
-
-    // Remove leading blank lines (preserve hashbang).
-    if (intermediate.startsWith('#!')) {
-        const hashbangEnd = intermediate.indexOf('\n');
-        if (hashbangEnd !== -1) {
-            const before = intermediate.slice(0, hashbangEnd + 1);
-            const after = intermediate.slice(hashbangEnd + 1).replace(/^\n+/, '');
-            intermediate = before + after;
-        }
-    } else {
-        intermediate = intermediate.replace(/^\n+/, '');
-    }
-
-    // Ensure the file ends with exactly one newline (if it originally did).
-    if (source.endsWith('\n') && intermediate.length > 0) {
-        intermediate = intermediate.replace(/\n*$/, '\n');
-    }
-
-    const result = intermediate;
-
-    // --- Build intermediate-line → final-line mapping ----------------------
-    // The cleanup may have removed/collapsed lines from the intermediateText.
-    // We line up intermediateText lines with final lines by content matching.
-    const finalLines = result.split('\n').map(line => line.replace(/[ \t]+$/, ''));
-    const intLines = intermediateText.split('\n');
-
-    // Trim trailing WS from intermediate lines to match what cleanup did.
-    const intLinesTrimmed = intLines.map(l => l.replace(/[ \t]+$/, ''));
-
-    /** @type {Int32Array} */
-    const intermediateToFinal = new Int32Array(intLines.length).fill(-1);
-    let fi = 0;
-    for (let ii = 0; ii < intLinesTrimmed.length && fi < finalLines.length; ii++) {
-        if (intLinesTrimmed[ii] === finalLines[fi]) {
-            intermediateToFinal[ii] = fi;
-            fi++;
-        }
-        // else: this intermediate line was removed by cleanup → stays -1
-    }
-
-    // --- Compose: original → intermediate → final --------------------------
-    /** @type {Int32Array} */
-    const lineMap = new Int32Array(origLineCount).fill(-1);
-    for (let oi = 0; oi < origLineCount; oi++) {
-        const il = origToIntermediate[oi];
-        if (il >= 0 && il < intermediateToFinal.length) {
-            lineMap[oi] = intermediateToFinal[il];
-        }
-    }
-
-    return { result, lineMap };
+    return { result, lineMap, mapPosition };
 }
 
 /**
@@ -712,11 +641,7 @@ export function stripCommentsWithLineMap(source, typesToStrip) {
 function buildLineStarts(text) {
     /** @type {number[]} */
     const starts = [0];
-    for (let i = 0; i < text.length; i++) {
-        if (text.charCodeAt(i) === 0x0a) {
-            starts.push(i + 1);
-        }
-    }
+    for (const match of text.matchAll(/\r\n|[\r\n\u2028\u2029]/g)) starts.push(match.index + match[0].length);
     return starts;
 }
 
@@ -787,4 +712,39 @@ export function adjustSourcemapLineMappings(map, sourceIndex, lineMap) {
     }
 
     map.mappings = encode(decoded);
+}
+
+/**
+ * Remap generated positions, or original positions for one source index.
+ * @param {{version: number, mappings: string, [key: string]: unknown}} map
+ * @param {PositionMapper} mapPosition
+ * @param {number} [sourceIndex]
+ */
+export function adjustSourcemapPositions(map, mapPosition, sourceIndex) {
+    if (map.version !== 3 || typeof map.mappings !== 'string') return;
+    const decoded = decode(map.mappings);
+    const generated = sourceIndex === undefined;
+    /** @type {import('@jridgewell/sourcemap-codec').SourceMapSegment[][]} */
+    const output = Array.from({ length: generated ? 0 : decoded.length }, () => []);
+    for (const [line, segments] of decoded.entries()) {
+        for (const segment of segments) {
+            let destination = line;
+            if (generated || (segment.length >= 4 && segment[1] === sourceIndex)) {
+                const original = /** @type {[number, number, number, number, ...number[]]} */ (segment);
+                const position = generated ? mapPosition(line, segment[0]) : mapPosition(original[2], original[3]);
+                if (position === null) continue;
+                if (generated) {
+                    destination = position.line;
+                    segment[0] = position.column;
+                } else if (segment.length >= 4) {
+                    segment[2] = position.line;
+                    segment[3] = position.column;
+                }
+            }
+            while (output.length <= destination) output.push([]);
+            output[destination].push(segment);
+        }
+    }
+    for (const line of output) line.sort((a, b) => a[0] - b[0]);
+    map.mappings = encode(output);
 }

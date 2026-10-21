@@ -6,7 +6,13 @@ import { Minimatch } from 'minimatch';
 
 import { extractReferences } from './extract-references.js';
 import { removeSourceMappingComments } from './sourcemap-comments.js';
-import { adjustSourcemapLineMappings, isStrippableFile, parseCommentTypes, stripCommentsWithLineMap } from './strip-comments.js';
+import {
+    adjustSourcemapLineMappings,
+    adjustSourcemapPositions,
+    isStrippableFile,
+    parseCommentTypes,
+    stripCommentsWithLineMap,
+} from './strip-comments.js';
 
 /**
  * Files always included by npm regardless of the `files` array.
@@ -142,30 +148,32 @@ export async function prunePkg(pkg, options, logger) {
         const allFiles = await walkDir('.', ['node_modules', '.git'], false);
         const jsFiles = allFiles.filter(isStrippableFile);
         const dtsMapFiles = allFiles.filter(f => f.endsWith('.d.ts.map'));
+        const mapFiles = new Set(allFiles.filter(f => f.endsWith('.map')));
 
         // Strip comments from JS files and collect line maps keyed by file path.
         /** @type {Map<string, Int32Array>} */
         const lineMaps = new Map();
         for (const file of jsFiles) {
             const content = await readFile(file, 'utf8');
-            const { result: stripped, lineMap } = stripCommentsWithLineMap(content, typesToStrip);
+            const { result: stripped, lineMap, mapPosition } = stripCommentsWithLineMap(content, typesToStrip);
             if (lineMap) {
                 await writeFile(file, stripped, 'utf8');
                 lineMaps.set(path.normalize(file), lineMap);
+                const mapFile = `${file}.map`;
+                const map = mapPosition && mapFiles.has(mapFile) ? await readSourcemap(mapFile) : undefined;
+                if (map && mapPosition) {
+                    const previous = map.mappings;
+                    adjustSourcemapPositions(map, mapPosition);
+                    if (map.mappings !== previous) await writeFile(mapFile, `${JSON.stringify(map, null, 2)}\n`, 'utf8');
+                }
             }
         }
 
         // Adjust .d.ts.map files that reference any of the stripped JS files.
         if (lineMaps.size > 0 && dtsMapFiles.length > 0) {
             for (const mapFile of dtsMapFiles) {
-                const mapContent = await readFile(mapFile, 'utf8');
-                let map;
-                try {
-                    map = JSON.parse(mapContent);
-                } catch {
-                    continue;
-                }
-                if (map.version !== 3 || !Array.isArray(map.sources)) continue;
+                const map = await readSourcemap(mapFile);
+                if (!map || !Array.isArray(map.sources)) continue;
 
                 let adjusted = false;
                 for (let si = 0; si < map.sources.length; si++) {
@@ -572,6 +580,17 @@ function cloneAndUpdate(pkg, updater) {
         return clone;
     }
     return pkg;
+}
+
+/** @param {string} file */
+async function readSourcemap(file) {
+    const content = await readFile(file, 'utf8');
+    try {
+        const map = JSON.parse(content);
+        return map?.version === 3 && typeof map.mappings === 'string' ? map : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 /**
