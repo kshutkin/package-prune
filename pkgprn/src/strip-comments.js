@@ -28,6 +28,11 @@ export function isStrippableFile(file) {
     return jsExtensions.some(ext => file.endsWith(ext));
 }
 
+/** @param {string} comment */
+export function isSourceMappingComment(comment) {
+    return /^\/[/*][#@]\s*sourceMappingURL\s*=/.test(comment);
+}
+
 /**
  * Keywords after which a `/` token begins a regex literal rather than division.
  */

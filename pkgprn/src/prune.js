@@ -2,6 +2,7 @@ import { access, glob as fsGlob, mkdir, readdir, readFile, rename, rm, stat, wri
 import path from 'node:path';
 
 import { extractReferences } from './extract-references.js';
+import { removeSourceMappingComments } from './sourcemap-comments.js';
 import { adjustSourcemapLineMappings, isStrippableFile, parseCommentTypes, stripCommentsWithLineMap } from './strip-comments.js';
 
 /**
@@ -118,8 +119,7 @@ export async function prunePkg(pkg, options, logger) {
             const sourceFile = sourceMap.slice(0, -4);
             if (await isExists(sourceFile)) {
                 const content = await readFile(sourceFile, 'utf8');
-                const sourceMappingUrl = `\n//# sourceMappingURL=${path.basename(sourceMap)}`;
-                await writeFile(sourceFile, content.replace(sourceMappingUrl, ''), 'utf8');
+                await writeFile(sourceFile, removeSourceMappingComments(content, sourceFile), 'utf8');
             }
             // remove sourceMap
             await rm(sourceMap);

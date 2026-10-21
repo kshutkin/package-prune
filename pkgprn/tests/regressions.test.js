@@ -201,3 +201,25 @@ test('sourcemap removal deletes orphan maps without requiring source files', asy
     await assert.rejects(fixture.read('dist/index.js.map'), { code: 'ENOENT' });
     await assert.rejects(fixture.read('dist/types.d.ts.map'), { code: 'ENOENT' });
 });
+
+test('map removal strips CSS and JavaScript directives while preserving literal text', async t => {
+    const css = 'body::before { content: "/*# sourceMappingURL=literal */"; }';
+    const js = 'const text = "//# sourceMappingURL=literal";';
+    const fixture = await packageFixture(
+        t,
+        {},
+        {
+            'theme.css': `${css}\n/*# sourceMappingURL=theme.css.map */`,
+            'theme.css.map': '{}',
+            'index.js': `${js}\n//@ sourceMappingURL=./index.js.map`,
+            'index.js.map': '{}',
+            'inline.css': 'body{}/*# sourceMappingURL=inline.css.map */',
+            'inline.css.map': '{}',
+        }
+    );
+    await fixture.run('--remove-sourcemaps');
+    assert.equal(await fixture.read('theme.css'), css);
+    assert.equal(await fixture.read('index.js'), js);
+    assert.equal(await fixture.read('inline.css'), 'body{}');
+    await assert.rejects(fixture.read('theme.css.map'), { code: 'ENOENT' });
+});
