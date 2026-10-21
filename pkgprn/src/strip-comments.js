@@ -500,7 +500,16 @@ export function stripCommentsWithLineMap(source, typesToStrip) {
     if (comments.length === 0) return { result: source, lineMap: null };
 
     // Filter to only the comments we want to remove.
-    const toRemove = comments.filter(c => typesToStrip.has(c.type));
+    const toRemove = comments
+        .filter(c => typesToStrip.has(c.type))
+        .map(comment => ({
+            ...comment,
+            replacement: /[\r\n\u2028\u2029]/.test(source.slice(comment.start, comment.end))
+                ? '\n'
+                : /\s/.test(source[comment.start - 1] || ' ') || /\s/.test(source[comment.end] || ' ')
+                  ? ''
+                  : ' ',
+        }));
 
     if (toRemove.length === 0) return { result: source, lineMap: null };
 
@@ -509,10 +518,11 @@ export function stripCommentsWithLineMap(source, typesToStrip) {
     const parts = [];
     let pos = 0;
 
-    for (const { start, end } of toRemove) {
+    for (const { start, end, replacement } of toRemove) {
         if (start > pos) {
             parts.push(source.slice(pos, start));
         }
+        parts.push(replacement);
         pos = end;
     }
 
@@ -542,10 +552,10 @@ export function stripCommentsWithLineMap(source, typesToStrip) {
      */
     function translateOffset(offset) {
         let removed = 0;
-        for (const { start, end } of toRemove) {
+        for (const { start, end, replacement } of toRemove) {
             if (offset < start) break;
             if (offset < end) return -1; // inside removed range
-            removed += end - start;
+            removed += end - start - replacement.length;
         }
         return offset - removed;
     }
