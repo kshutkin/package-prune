@@ -533,7 +533,7 @@ export function stripCommentsWithLineMap(source, typesToStrip) {
 
     // Filter to only the comments we want to remove.
     const toRemove = comments
-        .filter(c => typesToStrip.has(c.type))
+        .filter(c => typesToStrip.has(c.type) && !isSourceMappingComment(source.slice(c.start, c.end)))
         .map(comment => ({
             ...comment,
             replacement: /[\r\n\u2028\u2029]/.test(source.slice(comment.start, comment.end))

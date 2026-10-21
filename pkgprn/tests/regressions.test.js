@@ -223,3 +223,15 @@ test('map removal strips CSS and JavaScript directives while preserving literal 
     assert.equal(await fixture.read('inline.css'), 'body{}');
     await assert.rejects(fixture.read('theme.css.map'), { code: 'ENOENT' });
 });
+
+test('comment stripping preserves mapping directives unless map removal is requested', async t => {
+    const source = '// ordinary comment\nconst x = 1;\n//# sourceMappingURL=index.js.map\n';
+    const map = JSON.stringify({ version: 3, sources: [], names: [], mappings: '' });
+    const fixture = await packageFixture(t, {}, { 'index.js': source, 'index.js.map': map });
+    await fixture.run('--strip-comments');
+    assert.equal(await fixture.read('index.js'), 'const x = 1;\n//# sourceMappingURL=index.js.map\n');
+    assert.equal(await fixture.read('index.js.map'), map);
+    await fixture.run('--strip-comments', '--remove-sourcemaps');
+    assert.equal(await fixture.read('index.js'), 'const x = 1;\n');
+    await assert.rejects(fixture.read('index.js.map'), { code: 'ENOENT' });
+});
