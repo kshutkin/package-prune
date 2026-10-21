@@ -121,3 +121,66 @@ for (const flatten of [false, true]) {
         assert.equal(await fixture.read('dist/index.js'), 'export {};');
     });
 }
+
+test('flatten preserves nullable URL sources and rebases encoded local paths', async t => {
+    const fixture = await packageFixture(
+        t,
+        { main: './dist/index.js', files: ['dist', 'src'] },
+        {
+            'dist/index.js': 'export {};',
+            'src/a b.ts': 'export {};',
+            'dist/index.js.map': JSON.stringify({
+                version: 3,
+                sources: [null, 'webpack:///src/index.ts', 'https://example.test/src.ts', '../src/a%20b.ts'],
+                names: [],
+                mappings: '',
+            }),
+        }
+    );
+    await fixture.run('--flatten');
+    assert.deepEqual(JSON.parse(await fixture.read('index.js.map')).sources, [
+        null,
+        'webpack:///src/index.ts',
+        'https://example.test/src.ts',
+        'src/a%20b.ts',
+    ]);
+});
+
+test('flatten incorporates URL source roots without filesystem normalization', async t => {
+    const fixture = await packageFixture(
+        t,
+        { main: './dist/index.js' },
+        {
+            'dist/index.js': 'export {};',
+            'dist/index.js.map': JSON.stringify({
+                version: 3,
+                sourceRoot: 'https://example.test/src',
+                sources: ['index.ts'],
+                names: [],
+                mappings: '',
+            }),
+        }
+    );
+    await fixture.run('--flatten');
+    const map = JSON.parse(await fixture.read('index.js.map'));
+    assert.deepEqual(map.sources, ['https://example.test/src/index.ts']);
+    assert.equal(map.sourceRoot, undefined);
+});
+
+test('comment stripping skips nullable and remote declaration-map sources', async t => {
+    const fixture = await packageFixture(
+        t,
+        {},
+        {
+            'index.js': '// comment\nconst x = 1;\n',
+            'index.d.ts.map': JSON.stringify({
+                version: 3,
+                sources: [null, 'https://example.test/src.ts', 'index.js'],
+                names: [],
+                mappings: '',
+            }),
+        }
+    );
+    await fixture.run('--strip-comments');
+    assert.deepEqual(JSON.parse(await fixture.read('index.d.ts.map')).sources, [null, 'https://example.test/src.ts', 'index.js']);
+});

@@ -1,5 +1,6 @@
 import { access, lstat, mkdir, readdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { Minimatch } from 'minimatch';
 
@@ -166,11 +167,11 @@ export async function prunePkg(pkg, options, logger) {
                 }
                 if (map.version !== 3 || !Array.isArray(map.sources)) continue;
 
-                const mapDir = path.dirname(mapFile) || '.';
                 let adjusted = false;
                 for (let si = 0; si < map.sources.length; si++) {
-                    const resolved = path.normalize(path.join(mapDir, map.sourceRoot || '', map.sources[si]));
-                    const lineMap = lineMaps.get(resolved);
+                    const resolved = resolveSourceMapSource(map.sources[si], map.sourceRoot, mapFile);
+                    if (resolved?.protocol !== 'file:') continue;
+                    const lineMap = lineMaps.get(path.relative('.', fileURLToPath(resolved)));
                     if (lineMap) {
                         adjustSourcemapLineMappings(map, si, lineMap);
                         adjusted = true;
@@ -595,19 +596,14 @@ async function adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew) {
         return;
     }
 
-    const oldDir = path.dirname(oldMapPath) || '.';
     const newDir = path.dirname(newMapPath) || '.';
-    const sourceRoot = map.sourceRoot || '';
-
-    map.sources = map.sources.map((/** @type {string} */ source) => {
-        // Resolve source against old map location (incorporating sourceRoot)
-        const resolved = path.normalize(path.join(oldDir, sourceRoot, source));
-        // If the resolved source was itself moved, use its new location
-        const effective = oldToNew.get(resolved) ?? resolved;
-        // Make relative to new map location
-        const newRelative = path.relative(newDir, effective);
-        // Sourcemaps always use forward slashes
-        return newRelative.split(path.sep).join('/');
+    map.sources = map.sources.map((/** @type {string | null} */ source) => {
+        const resolved = resolveSourceMapSource(source, map.sourceRoot, oldMapPath);
+        if (resolved === null) return null;
+        if (resolved.protocol !== 'file:') return resolved.href;
+        const oldRelative = path.relative('.', fileURLToPath(resolved));
+        const effective = oldToNew.get(oldRelative) ?? oldRelative;
+        return path.relative(newDir, effective).split(path.sep).map(encodeURIComponent).join('/');
     });
 
     // sourceRoot has been incorporated into the individual source paths
@@ -616,6 +612,17 @@ async function adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew) {
     }
 
     await writeFile(newMapPath, `${JSON.stringify(map, null, 2)}\n`, 'utf8');
+}
+
+/**
+ * @param {string | null} source
+ * @param {string | null | undefined} sourceRoot
+ * @param {string} mapFile
+ */
+function resolveSourceMapSource(source, sourceRoot, mapFile) {
+    if (source === null) return null;
+    const prefix = sourceRoot ? `${sourceRoot.replace(/\/$/, '')}/` : '';
+    return new URL(prefix + source, pathToFileURL(path.resolve(mapFile)));
 }
 
 /**
