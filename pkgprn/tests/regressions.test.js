@@ -162,3 +162,18 @@ test('files optimization handles gaps between directory depths', async t => {
     assert.deepEqual(await fixture.pack(), before);
     assert.equal(await fixture.read('a/b/c/private.js'), 'private');
 });
+
+test('automatic flatten uses the static prefix of wildcard exports', async t => {
+    const fixture = await packageFixture(
+        t,
+        { exports: { './*': './dist/*/index.js' }, files: ['dist'] },
+        {
+            'dist/feature/index.js': 'export {};',
+            'dist/.hidden/index.js': 'export {};',
+        }
+    );
+    await fixture.run('--flatten');
+    assert.deepEqual((await fixture.pkg()).exports, { './*': './*/index.js' });
+    assert.equal(await fixture.read('feature/index.js'), 'export {};');
+    assert.equal(await fixture.read('.hidden/index.js'), 'export {};');
+});

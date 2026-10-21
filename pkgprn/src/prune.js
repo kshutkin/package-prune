@@ -307,6 +307,8 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
             const dirname = path.dirname(entry);
 
             const cleanedSegments = dirname.split('/').filter(path => path && path !== '.');
+            const wildcard = cleanedSegments.findIndex(segment => segment.includes('*'));
+            if (wildcard !== -1) cleanedSegments.length = wildcard;
             if (!commonSegments) {
                 commonSegments = cleanedSegments;
             } else {
