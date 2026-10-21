@@ -50,3 +50,20 @@ for (const files of [['dist/**/*.js'], ['dist', '!dist/*.map', 'dist/keep.map'],
         });
     }
 }
+
+for (const files of [[], ['README.md'], ['missing/**/*.js']]) {
+    test(`optimization retains restrictive whitelist ${JSON.stringify(files)}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { name: 'fixture', version: '1.0.0', files },
+            {
+                'README.md': 'read me',
+                'private.txt': 'private',
+            }
+        );
+        const before = await fixture.pack();
+        await fixture.run('--no-cleanup-files');
+        assert.deepEqual(await fixture.pack(), before);
+        assert.deepEqual((await fixture.pkg()).files, []);
+    });
+}

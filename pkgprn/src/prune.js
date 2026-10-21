@@ -265,10 +265,6 @@ export async function prunePkg(pkg, options, logger) {
         }
 
         pkg.files = pkg.files.filter(dir => !ignoreDirs.includes(dir));
-
-        if (pkg.files.length === 0) {
-            pkg.files = undefined;
-        }
     }
 
     if (options.cleanupFiles) {
