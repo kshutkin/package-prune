@@ -31,6 +31,8 @@ export function isStrippableFile(file) {
 /**
  * Keywords after which a `/` token begins a regex literal rather than division.
  */
+const controlKeywords = new Set(['if', 'while', 'for', 'with', 'switch', 'catch']);
+
 const regexPrecedingKeywords = new Set([
     'return',
     'throw',
@@ -116,6 +118,10 @@ export function scanComments(source, literals = []) {
     // of an expression.  If it could, `/` is the division operator;
     // otherwise `/` starts a regex literal.
     let exprEnd = false;
+    let controlParen = false;
+    let propertyAccess = false;
+    /** @type {boolean[]} */
+    const parens = [];
 
     // --- Hashbang ----------------------------------------------------------
     if (len >= 2 && source[0] === '#' && source[1] === '!') {
@@ -232,6 +238,8 @@ export function scanComments(source, literals = []) {
             i++;
             while (i < len && isIdentPart(source.charCodeAt(i))) i++;
             const word = source.slice(wordStart, i);
+            controlParen = !propertyAccess && (controlKeywords.has(word) || (word === 'await' && controlParen));
+            propertyAccess = false;
             exprEnd = !regexPrecedingKeywords.has(word);
             continue;
         }
@@ -243,14 +251,24 @@ export function scanComments(source, literals = []) {
             continue;
         }
 
-        // ---- closing brackets ) ] ----------------------------------------
-        if (ch === 0x29 /* ) */ || ch === 0x5d /* ] */) {
+        if (ch === 0x28 /* ( */) {
+            parens.push(controlParen);
+            controlParen = false;
+            exprEnd = false;
             i++;
-            exprEnd = true;
+            continue;
+        }
+
+        // A control condition ends before a statement, which may start with a regex.
+        if (ch === 0x29 /* ) */ || ch === 0x5d /* ] */) {
+            exprEnd = ch === 0x5d || !parens.pop();
+            i++;
             continue;
         }
 
         // ---- everything else: operators, punctuation ----------------------
+        controlParen = false;
+        propertyAccess = ch === 0x2e /* . */;
         i++;
         exprEnd = false;
     }

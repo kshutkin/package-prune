@@ -28,3 +28,16 @@ for (const source of [
         assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
     });
 }
+
+for (const source of [
+    'if (true) /[/*]/.test("*");',
+    'if ((() => true)()) /[/*]/.test("*");',
+    'let x = 0; while (x++ < 1) /[/*]/.test("*"); x;',
+    'for (let x = 0; x < 1; x++) /[/*]/.test("*");',
+    'const obj = { if: () => 4 }; obj.if() / 2; // comment',
+    'const f = () => 4; f() / 2; // comment',
+]) {
+    test(`regex and division context survives stripping: ${source}`, () => {
+        assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
+    });
+}
