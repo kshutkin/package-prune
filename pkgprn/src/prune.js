@@ -467,14 +467,15 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
     const allReferencesSet = new Set(allReferences);
 
     // update package.json - replace each distDir prefix in references
-    const stringsToReplace = distDirs.map(d => `${d}/`);
+    const prefixes = distDirs.map(dir => `${dir}${path.sep}`);
     const pkgClone = cloneAndUpdate(pkg, value => {
         if (!allReferencesSet.has(value)) {
             return value;
         }
-        for (const stringToReplace of stringsToReplace) {
-            if (value.includes(stringToReplace)) {
-                return value.replace(stringToReplace, '');
+        const normalized = normalizePath(value);
+        for (const prefix of prefixes) {
+            if (normalized.startsWith(prefix)) {
+                return (value.startsWith('./') ? './' : '') + normalized.slice(prefix.length);
             }
         }
         return value;

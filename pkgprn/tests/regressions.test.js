@@ -96,3 +96,26 @@ test('content transformations exclude dependencies at every depth', async t => {
     assert.equal(await fixture.read('.hidden/local.js'), 'const local = 1;\n');
     await assert.rejects(fixture.read('.hidden/local.js.map'), { code: 'ENOENT' });
 });
+
+test('explicit flatten rewrites only references inside the selected directory', async t => {
+    const fixture = await packageFixture(
+        t,
+        {
+            main: './dist/index.js',
+            exports: { '.': './dist/index.js', './other': './mydist/other.js', './nested': './other/dist/index.js' },
+        },
+        {
+            'dist/index.js': 'export {};',
+            'mydist/other.js': 'export const other = 1;',
+            'other/dist/index.js': 'export const nested = 1;',
+        }
+    );
+    await fixture.run('--flatten=./dist');
+    assert.deepEqual((await fixture.pkg()).exports, {
+        '.': './index.js',
+        './other': './mydist/other.js',
+        './nested': './other/dist/index.js',
+    });
+    assert.equal(await fixture.read('mydist/other.js'), 'export const other = 1;');
+    assert.equal(await fixture.read('other/dist/index.js'), 'export const nested = 1;');
+});
