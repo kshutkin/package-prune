@@ -147,3 +147,18 @@ for (const cleanup of [true, false]) {
         if (cleanup) await assert.rejects(fixture.read('dist/private.js'), { code: 'ENOENT' });
     });
 }
+
+test('files optimization handles gaps between directory depths', async t => {
+    const fixture = await packageFixture(
+        t,
+        { name: 'fixture', version: '1.0.0', files: ['a/b/c/index.js'] },
+        {
+            'a/b/c/index.js': 'export {};',
+            'a/b/c/private.js': 'private',
+        }
+    );
+    const before = await fixture.pack();
+    await fixture.run('--no-cleanup-files');
+    assert.deepEqual(await fixture.pack(), before);
+    assert.equal(await fixture.read('a/b/c/private.js'), 'private');
+});

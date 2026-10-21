@@ -200,7 +200,7 @@ export async function prunePkg(pkg, options, logger) {
         // walk depth keys from the highest to the lowest
         const maxDepth = Math.max(...depthToFiles.keys());
         for (let depth = maxDepth; depth > 0; --depth) {
-            const files = depthToFiles.get(depth);
+            const files = depthToFiles.get(depth) ?? [];
             const mapDirToFiles = new Map();
             for (const file of files) {
                 const dirname = path.dirname(file);
