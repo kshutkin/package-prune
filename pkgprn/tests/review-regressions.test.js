@@ -103,3 +103,21 @@ test('flatten rejects symlink destination ancestors', async t => {
     assert.equal(await fixture.read('dist/a/b.js'), 'original');
     await assert.rejects(readFile(path.join(external, 'b.js')), { code: 'ENOENT' });
 });
+
+for (const flatten of [false, true]) {
+    test(`invalid comment options fail before mutations, flatten=${flatten}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { main: './dist/index.js', files: ['dist'], devDependencies: { dependency: '1.0.0' } },
+            {
+                'dist/index.js': 'export {};',
+                'src/index.js': 'original',
+            }
+        );
+        const before = await fixture.read('package.json');
+        await assert.rejects(fixture.run('--strip-comments=typo', ...(flatten ? ['--flatten=dist'] : [])));
+        assert.equal(await fixture.read('package.json'), before);
+        assert.equal(await fixture.read('src/index.js'), 'original');
+        assert.equal(await fixture.read('dist/index.js'), 'export {};');
+    });
+}

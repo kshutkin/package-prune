@@ -82,6 +82,8 @@ export async function prunePkg(pkg, options, logger) {
         throw new Error(`unknown profile ${options.profile}`);
     }
 
+    const typesToStrip = options.stripComments ? parseCommentTypes(options.stripComments) : undefined;
+
     pkg.devDependencies = undefined;
     pkg.packageManager = undefined;
 
@@ -134,8 +136,7 @@ export async function prunePkg(pkg, options, logger) {
         }
     }
 
-    if (options.stripComments) {
-        const typesToStrip = parseCommentTypes(options.stripComments);
+    if (typesToStrip) {
         logger.update('stripping comments...');
         const allFiles = await walkDir('.', ['node_modules', '.git'], false);
         const jsFiles = allFiles.filter(isStrippableFile);
