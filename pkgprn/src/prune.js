@@ -6,13 +6,7 @@ import { Minimatch } from 'minimatch';
 
 import { extractReferences } from './extract-references.js';
 import { removeSourceMappingComments } from './sourcemap-comments.js';
-import {
-    adjustSourcemapLineMappings,
-    adjustSourcemapPositions,
-    isStrippableFile,
-    parseCommentTypes,
-    stripCommentsWithLineMap,
-} from './strip-comments.js';
+import { adjustSourcemapPositions, isStrippableFile, parseCommentTypes, stripCommentsWithLineMap } from './strip-comments.js';
 
 /**
  * Files always included by npm regardless of the `files` array.
@@ -150,18 +144,18 @@ export async function prunePkg(pkg, options, logger) {
         const dtsMapFiles = allFiles.filter(f => f.endsWith('.d.ts.map'));
         const mapFiles = new Set(allFiles.filter(f => f.endsWith('.map')));
 
-        // Strip comments from JS files and collect line maps keyed by file path.
-        /** @type {Map<string, Int32Array>} */
-        const lineMaps = new Map();
+        // Reuse the same position maps for generated and declaration mappings.
+        /** @type {Map<string, {mapPosition: import('./strip-comments.js').PositionMapper, source: string}>} */
+        const positionMaps = new Map();
         for (const file of jsFiles) {
             const content = await readFile(file, 'utf8');
-            const { result: stripped, lineMap, mapPosition } = stripCommentsWithLineMap(content, typesToStrip);
-            if (lineMap) {
+            const { result: stripped, mapPosition } = stripCommentsWithLineMap(content, typesToStrip);
+            if (mapPosition) {
                 await writeFile(file, stripped, 'utf8');
-                lineMaps.set(path.normalize(file), lineMap);
+                positionMaps.set(path.normalize(file), { mapPosition, source: stripped });
                 const mapFile = `${file}.map`;
-                const map = mapPosition && mapFiles.has(mapFile) ? await readSourcemap(mapFile) : undefined;
-                if (map && mapPosition) {
+                const map = mapFiles.has(mapFile) ? await readSourcemap(mapFile) : undefined;
+                if (map) {
                     const previous = map.mappings;
                     adjustSourcemapPositions(map, mapPosition);
                     if (map.mappings !== previous) await writeFile(mapFile, `${JSON.stringify(map, null, 2)}\n`, 'utf8');
@@ -170,7 +164,7 @@ export async function prunePkg(pkg, options, logger) {
         }
 
         // Adjust .d.ts.map files that reference any of the stripped JS files.
-        if (lineMaps.size > 0 && dtsMapFiles.length > 0) {
+        if (positionMaps.size > 0 && dtsMapFiles.length > 0) {
             for (const mapFile of dtsMapFiles) {
                 const map = await readSourcemap(mapFile);
                 if (!map || !Array.isArray(map.sources)) continue;
@@ -179,9 +173,10 @@ export async function prunePkg(pkg, options, logger) {
                 for (let si = 0; si < map.sources.length; si++) {
                     const resolved = resolveSourceMapSource(map.sources[si], map.sourceRoot, mapFile);
                     if (resolved?.protocol !== 'file:') continue;
-                    const lineMap = lineMaps.get(path.relative('.', fileURLToPath(resolved)));
-                    if (lineMap) {
-                        adjustSourcemapLineMappings(map, si, lineMap);
+                    const edit = positionMaps.get(path.relative('.', fileURLToPath(resolved)));
+                    if (edit) {
+                        adjustSourcemapPositions(map, edit.mapPosition, si);
+                        if (typeof map.sourcesContent?.[si] === 'string') map.sourcesContent[si] = edit.source;
                         adjusted = true;
                     }
                 }

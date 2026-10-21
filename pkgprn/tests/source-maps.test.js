@@ -49,3 +49,37 @@ test('comment stripping remaps generated JavaScript source positions', async t =
         ],
     ]);
 });
+
+test('declaration maps track original columns and embedded source contents', async t => {
+    const line = 'const answer = /* docs */ 42;';
+    const source = `// heading\n${line}\n`;
+    const fixture = await packageFixture(
+        t,
+        {},
+        {
+            'index.js': source,
+            'index.d.ts.map': JSON.stringify({
+                version: 3,
+                sources: ['index.js', 'other.js'],
+                sourcesContent: [source, 'other'],
+                names: ['answer'],
+                mappings: encode([
+                    [
+                        [0, 0, 1, line.indexOf('42'), 0],
+                        [3, 1, 4, 6],
+                    ],
+                ]),
+            }),
+        }
+    );
+    await fixture.run('--strip-comments');
+    const stripped = await fixture.read('index.js');
+    const map = JSON.parse(await fixture.read('index.d.ts.map'));
+    assert.deepEqual(decode(map.mappings), [
+        [
+            [0, 0, 0, stripped.indexOf('42'), 0],
+            [3, 1, 4, 6],
+        ],
+    ]);
+    assert.deepEqual(map.sourcesContent, [stripped, 'other']);
+});

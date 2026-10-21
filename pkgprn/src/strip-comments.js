@@ -679,39 +679,14 @@ function offsetToLine(lineStarts, offset) {
  * @param {Int32Array} lineMap - 0-based original line → 0-based new line (-1 if removed).
  */
 export function adjustSourcemapLineMappings(map, sourceIndex, lineMap) {
-    if (map.version !== 3 || typeof map.mappings !== 'string') return;
-
-    const decoded = decode(map.mappings);
-
-    for (const line of decoded) {
-        // Walk backwards so we can splice without index issues.
-        for (let si = line.length - 1; si >= 0; si--) {
-            const seg = line[si];
-            // Segments with < 4 fields have no source mapping.
-            if (seg.length < 4) continue;
-            const seg4 = /** @type {[number, number, number, number, ...number[]]} */ (seg);
-            // Only adjust segments pointing at the stripped source file.
-            if (seg4[1] !== sourceIndex) continue;
-
-            const origLine = seg4[2]; // 0-based
-            if (origLine < 0 || origLine >= lineMap.length) {
-                // Out of range — drop it.
-                line.splice(si, 1);
-                continue;
-            }
-
-            const newLine = lineMap[origLine];
-            if (newLine === -1) {
-                // The line was removed — drop this segment.
-                line.splice(si, 1);
-                continue;
-            }
-
-            seg4[2] = newLine;
-        }
-    }
-
-    map.mappings = encode(decoded);
+    adjustSourcemapPositions(
+        map,
+        (line, column) => {
+            const mapped = lineMap[line];
+            return mapped === undefined || mapped < 0 ? null : { line: mapped, column };
+        },
+        sourceIndex
+    );
 }
 
 /**
