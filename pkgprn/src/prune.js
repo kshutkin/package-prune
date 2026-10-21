@@ -49,7 +49,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {string|Object.<string, string>} [bin]
  * @property {Array<string>} [files]
  * @property {Record<string, unknown>} [directories]
- * @property {Record<string, unknown>} [exports]
+ * @property {string|Array<unknown>|Record<string, unknown>|null} [exports]
  * @property {Record<string, unknown>} [typesVersions]
  */
 

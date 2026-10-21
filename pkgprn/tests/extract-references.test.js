@@ -65,20 +65,22 @@ describe('extractReferences', () => {
         assert.deepStrictEqual(result, ['./types/index.d.ts', './dist/index.js', './dist/second.mjs', './dist/second.js']);
     });
 
-    test('skips string values at exports level 1 (only descends into objects)', () => {
+    test('extracts string exports alongside conditional exports', () => {
         const result = extractReferences({
             exports: {
                 '.': {
                     types: './types/index.d.ts',
                     default: './prune.js',
                 },
+                './theme.css': './dist/theme.css',
+                './feature': './dist/feature.js',
                 './package.json': './package.json',
             },
         });
-        assert.deepStrictEqual(result, ['./types/index.d.ts', './prune.js']);
+        assert.deepStrictEqual(result, ['./types/index.d.ts', './prune.js', './dist/theme.css', './dist/feature.js', './package.json']);
     });
 
-    test('handles nested conditional exports (3 levels) - only extracts 2 levels deep', () => {
+    test('extracts nested conditional exports', () => {
         const result = extractReferences({
             exports: {
                 '.': {
@@ -87,9 +89,7 @@ describe('extractReferences', () => {
                 },
             },
         });
-        // node -> object (not a string, included as-is since it's at level 2)
-        // default -> string
-        assert.deepStrictEqual(result, [{ import: './dist/node.mjs', require: './dist/node.cjs' }, './dist/index.js']);
+        assert.deepStrictEqual(result, ['./dist/node.mjs', './dist/node.cjs', './dist/index.js']);
     });
 
     test('flattens array values in exports at level 2', () => {
@@ -179,14 +179,35 @@ describe('extractReferences', () => {
         assert.deepStrictEqual(result, ['./dist/index.d.ts']);
     });
 
-    test('ignores exports when not an object', () => {
+    test('extracts a root string export', () => {
         const result = extractReferences({ exports: './dist/index.js' });
-        assert.deepStrictEqual(result, []);
+        assert.deepStrictEqual(result, ['./dist/index.js']);
     });
 
-    test('ignores exports when it is an array', () => {
-        const result = extractReferences({ exports: ['./dist/index.js'] });
-        assert.deepStrictEqual(result, []);
+    test('extracts root fallback arrays including nested conditions', () => {
+        const result = extractReferences({ exports: [null, { node: ['./dist/node.js'] }, './dist/index.js'] });
+        assert.deepStrictEqual(result, ['./dist/node.js', './dist/index.js']);
+    });
+
+    test('extracts root conditional exports', () => {
+        const result = extractReferences({
+            exports: { import: './dist/index.mjs', require: './dist/index.cjs' },
+        });
+        assert.deepStrictEqual(result, ['./dist/index.mjs', './dist/index.cjs']);
+    });
+
+    test('extracts subpath fallback arrays and ignores null and invalid targets', () => {
+        const result = extractReferences({
+            exports: {
+                './feature': [null, { default: './dist/feature.js' }, './dist/fallback.js'],
+                './private': null,
+                './invalid': 42,
+            },
+        });
+        assert.deepStrictEqual(result, ['./dist/feature.js', './dist/fallback.js']);
+        for (const exports of [null, undefined, 42, false]) {
+            assert.deepStrictEqual(extractReferences({ exports }), []);
+        }
     });
 
     test('ignores typesVersions when not an object', () => {

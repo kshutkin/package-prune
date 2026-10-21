@@ -1,8 +1,7 @@
 /**
  * Extracts all file path references from a package.json object.
  *
- * Replaces the jsonata expression:
- *   [bin, bin.*, main, module, unpkg, umd, types, typings, exports[].*.*, typesVersions.*.*, directories.bin]
+ * Includes string export targets at any depth in subpath maps, conditions, and arrays.
  *
  * @param {Record<string, unknown>} pkg
  * @returns {unknown[]}
@@ -31,26 +30,22 @@ export function extractReferences(pkg) {
         }
     }
 
-    // exports[].*.* — navigate exactly 2 levels deep into the exports object.
-    // Level 1: values of the exports object (e.g. exports["."], exports["./second"])
-    // Level 2: values of each level-1 value (if it's an object)
-    // String values at level 1 are skipped (jsonata wildcard on string yields nothing).
-    // Array values at level 2 are flattened.
-    if (typeof pkg.exports === 'object' && pkg.exports !== null && !Array.isArray(pkg.exports)) {
-        for (const level1 of Object.values(pkg.exports)) {
-            if (typeof level1 === 'object' && level1 !== null && !Array.isArray(level1)) {
-                for (const level2 of Object.values(/** @type {Record<string, unknown>} */ (level1))) {
-                    if (Array.isArray(level2)) {
-                        for (const item of level2) {
-                            result.push(item);
-                        }
-                    } else {
-                        result.push(level2);
-                    }
-                }
+    // Export targets can be strings, conditional/subpath objects, or fallback arrays.
+    /** @param {unknown} target */
+    function collectExportReferences(target) {
+        if (typeof target === 'string') {
+            result.push(target);
+        } else if (Array.isArray(target)) {
+            for (const item of target) {
+                collectExportReferences(item);
+            }
+        } else if (typeof target === 'object' && target !== null) {
+            for (const value of Object.values(target)) {
+                collectExportReferences(value);
             }
         }
     }
+    collectExportReferences(pkg.exports);
 
     // typesVersions.*.* — 2 levels of wildcard, arrays are flattened
     if (typeof pkg.typesVersions === 'object' && pkg.typesVersions !== null && !Array.isArray(pkg.typesVersions)) {
