@@ -116,14 +116,11 @@ export async function prunePkg(pkg, options, logger) {
         for (const sourceMap of sourceMaps) {
             // find corresponding file
             const sourceFile = sourceMap.slice(0, -4);
-            // load file
-            const sourceFileContent = await readFile(sourceFile, 'utf8');
-            // find sourceMappingURL
-            const sourceMappingUrl = `\n//# sourceMappingURL=${path.basename(sourceMap)}`;
-            // remove sourceMappingURL
-            const newContent = sourceFileContent.replace(sourceMappingUrl, '');
-            // write file
-            await writeFile(sourceFile, newContent, 'utf8');
+            if (await isExists(sourceFile)) {
+                const content = await readFile(sourceFile, 'utf8');
+                const sourceMappingUrl = `\n//# sourceMappingURL=${path.basename(sourceMap)}`;
+                await writeFile(sourceFile, content.replace(sourceMappingUrl, ''), 'utf8');
+            }
             // remove sourceMap
             await rm(sourceMap);
         }

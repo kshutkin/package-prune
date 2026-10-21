@@ -194,3 +194,10 @@ test('automatic flatten rebases sourcemap sources outside the moved directory', 
     assert.equal(map.sourceRoot, undefined);
     assert.equal(await fixture.read(map.sources[0]), 'export {};');
 });
+
+test('sourcemap removal deletes orphan maps without requiring source files', async t => {
+    const fixture = await packageFixture(t, {}, { 'dist/index.js.map': '{}', 'dist/types.d.ts.map': '{}' });
+    await fixture.run('--remove-sourcemaps');
+    await assert.rejects(fixture.read('dist/index.js.map'), { code: 'ENOENT' });
+    await assert.rejects(fixture.read('dist/types.d.ts.map'), { code: 'ENOENT' });
+});
