@@ -200,7 +200,7 @@ export function scanComments(source, literals = []) {
         // ---- template literal --------------------------------------------
         if (ch === 0x60 /* ` */) {
             i = scanTemplateTail(source, i + 1, len, templateStack, literals);
-            exprEnd = true;
+            exprEnd = source[i - 1] !== '{';
             continue;
         }
 
@@ -212,7 +212,7 @@ export function scanComments(source, literals = []) {
                     // Returning from a template expression back to the template body.
                     templateStack.pop();
                     i = scanTemplateTail(source, i + 1, len, templateStack, literals);
-                    exprEnd = true;
+                    exprEnd = source[i - 1] !== '{';
                     continue;
                 }
                 templateStack[templateStack.length - 1] = depth - 1;

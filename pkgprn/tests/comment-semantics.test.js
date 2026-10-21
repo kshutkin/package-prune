@@ -41,3 +41,9 @@ for (const source of [
         assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
     });
 }
+
+for (const source of ['const s = `${/[/*]/.test("*") /* comment */}`; s;', 'const s = `${1} ${/[/*]/.test("*") /* comment */}`; s;']) {
+    test(`regex inside template expressions survives stripping: ${source}`, () => {
+        assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
+    });
+}
