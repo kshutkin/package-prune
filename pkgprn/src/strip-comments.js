@@ -125,6 +125,9 @@ export function scanComments(source, literals = []) {
     let exprEnd = false;
     let controlParen = false;
     let propertyAccess = false;
+    let lastToken = '';
+    /** @type {boolean[]} */
+    const objectBraces = [];
     /** @type {boolean[]} */
     const parens = [];
 
@@ -201,6 +204,7 @@ export function scanComments(source, literals = []) {
         if (ch === 0x60 /* ` */) {
             i = scanTemplateTail(source, i + 1, len, templateStack, literals);
             exprEnd = source[i - 1] !== '{';
+            lastToken = exprEnd ? 'literal' : '(';
             continue;
         }
 
@@ -213,22 +217,22 @@ export function scanComments(source, literals = []) {
                     templateStack.pop();
                     i = scanTemplateTail(source, i + 1, len, templateStack, literals);
                     exprEnd = source[i - 1] !== '{';
+                    lastToken = exprEnd ? 'literal' : '(';
                     continue;
                 }
                 templateStack[templateStack.length - 1] = depth - 1;
             }
             i++;
-            // After `}` we conservatively assume regex can follow.
-            // This is correct for block statements, if/for/while bodies,
-            // class bodies, etc.  For the rare `({}) / x` pattern it would
-            // misidentify division as regex, but that is harmless for
-            // comment detection (we just skip over the "regex" body).
-            exprEnd = false;
+            // An object expression can end before division; a statement block cannot.
+            exprEnd = objectBraces.pop() ?? false;
+            lastToken = '}';
             continue;
         }
 
         // ---- opening brace -----------------------------------------------
         if (ch === 0x7b /* { */) {
+            objectBraces.push(['=', '(', '[', ',', ':', 'return', 'yield'].includes(lastToken));
+            lastToken = '{';
             if (templateStack.length > 0) {
                 templateStack[templateStack.length - 1]++;
             }
@@ -244,8 +248,9 @@ export function scanComments(source, literals = []) {
             while (i < len && isIdentPart(source.charCodeAt(i))) i++;
             const word = source.slice(wordStart, i);
             controlParen = !propertyAccess && (controlKeywords.has(word) || (word === 'await' && controlParen));
+            exprEnd = propertyAccess || !regexPrecedingKeywords.has(word);
             propertyAccess = false;
-            exprEnd = !regexPrecedingKeywords.has(word);
+            lastToken = word;
             continue;
         }
 
@@ -258,6 +263,7 @@ export function scanComments(source, literals = []) {
 
         if (ch === 0x28 /* ( */) {
             parens.push(controlParen);
+            lastToken = '(';
             controlParen = false;
             exprEnd = false;
             i++;
@@ -267,6 +273,7 @@ export function scanComments(source, literals = []) {
         // A control condition ends before a statement, which may start with a regex.
         if (ch === 0x29 /* ) */ || ch === 0x5d /* ] */) {
             exprEnd = ch === 0x5d || !parens.pop();
+            lastToken = source[i];
             i++;
             continue;
         }
@@ -274,6 +281,7 @@ export function scanComments(source, literals = []) {
         // ---- everything else: operators, punctuation ----------------------
         controlParen = false;
         propertyAccess = ch === 0x2e /* . */;
+        lastToken = source[i];
         i++;
         exprEnd = false;
     }

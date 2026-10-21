@@ -47,3 +47,13 @@ for (const source of ['const s = `${/[/*]/.test("*") /* comment */}`; s;', 'cons
         assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
     });
 }
+
+for (const source of [
+    'const n = {} / 2; const re = /[/*]/; re.test("*");',
+    'const obj = {return: 4}; obj.return / 2; const re = /[/*]/; re.test("*");',
+    'const obj = {throw: 4}; obj.throw / 2; const re = /[/*]/; re.test("*");',
+]) {
+    test(`division context preserves subsequent regex: ${source}`, () => {
+        assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
+    });
+}
