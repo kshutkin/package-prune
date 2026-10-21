@@ -763,21 +763,35 @@ function isGlobPattern(str) {
 }
 
 /**
- * Expands glob patterns in the files array using Node's built-in fs.glob.
- * Non-glob entries are passed through unchanged.
+ * Resolves files globs and negated exclusions using Node's built-in fs.glob.
+ * Directory entries remain intact unless exclusions require individual files.
  * @param {string[]} files
  * @returns {Promise<string[]>}
  */
 async function expandFileGlobs(files) {
+    const exclude = files.filter(entry => entry.startsWith('!')).map(entry => entry.slice(1));
+    const included = files.filter(entry => !entry.startsWith('!'));
+    /** @type {string[]} */
+    const excluded = [];
+    if (exclude.length) {
+        for await (const match of fsGlob(exclude)) {
+            excluded.push(normalizePath(match));
+        }
+    }
     /** @type {string[]} */
     const result = [];
-    for (const entry of files) {
-        if (isGlobPattern(entry)) {
-            for await (const match of fsGlob(entry)) {
-                result.push(normalizePath(match));
+    for (const entry of included) {
+        const matches = isGlobPattern(entry) || exclude.length ? fsGlob(entry, { exclude }) : [entry];
+        for await (const match of matches) {
+            // Expand included directories only when exclusions require granular cleanup.
+            // Complete traversal retains hidden files that a globstar would skip.
+            const candidates = exclude.length && (await isDirectory(match)) ? await walkDir(match, ['node_modules', '.git']) : [match];
+            for (const candidate of candidates) {
+                const file = normalizePath(candidate);
+                if (!excluded.some(entry => entry === file || isSubDirectory(entry, file))) {
+                    result.push(file);
+                }
             }
-        } else {
-            result.push(entry);
         }
     }
     return [...new Set(result)];

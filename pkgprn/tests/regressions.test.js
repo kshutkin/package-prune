@@ -119,3 +119,31 @@ test('explicit flatten rewrites only references inside the selected directory', 
     assert.equal(await fixture.read('mydist/other.js'), 'export const other = 1;');
     assert.equal(await fixture.read('other/dist/index.js'), 'export const nested = 1;');
 });
+
+for (const cleanup of [true, false]) {
+    test(`negated files patterns preserve npm contents with cleanup=${cleanup}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            {
+                name: 'fixture',
+                version: '1.0.0',
+                files: ['dist', '!dist/private.js', '!dist/private', '!dist/**/secret.*'],
+            },
+            {
+                'dist/index.js': 'export {};',
+                'dist/private.js': 'private',
+                'dist/private/data.txt': 'private',
+                'dist/nested/secret.txt': 'private',
+                'dist/nested/public.txt': 'public',
+                'dist/.hidden/data.txt': 'hidden',
+                'dist/.hidden-file': 'hidden',
+            }
+        );
+        const before = await fixture.pack();
+        assert.ok(before.includes('dist/.hidden/data.txt'));
+        assert.ok(!before.includes('dist/private.js'));
+        await fixture.run(...(cleanup ? [] : ['--no-cleanup-files']));
+        assert.deepEqual(await fixture.pack(), before);
+        if (cleanup) await assert.rejects(fixture.read('dist/private.js'), { code: 'ENOENT' });
+    });
+}
