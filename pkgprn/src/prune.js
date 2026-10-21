@@ -1,6 +1,8 @@
 import { access, glob as fsGlob, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { Minimatch } from 'minimatch';
+
 import { extractReferences } from './extract-references.js';
 import { removeSourceMappingComments } from './sourcemap-comments.js';
 import { adjustSourcemapLineMappings, isStrippableFile, parseCommentTypes, stripCommentsWithLineMap } from './strip-comments.js';
@@ -770,13 +772,8 @@ function isGlobPattern(str) {
 async function expandFileGlobs(files) {
     const exclude = files.filter(entry => entry.startsWith('!')).map(entry => entry.slice(1));
     const included = files.filter(entry => !entry.startsWith('!'));
-    /** @type {string[]} */
-    const excluded = [];
-    if (exclude.length) {
-        for await (const match of fsGlob(exclude)) {
-            excluded.push(normalizePath(match));
-        }
-    }
+    // npm exclusions include dotfiles, unlike Node glob's default matching.
+    const excluded = exclude.flatMap(pattern => [pattern, `${pattern}/**`]).map(pattern => new Minimatch(pattern, { dot: true }));
     /** @type {string[]} */
     const result = [];
     for (const entry of included) {
@@ -787,7 +784,7 @@ async function expandFileGlobs(files) {
             const candidates = exclude.length && (await isDirectory(match)) ? await walkDir(match, ['node_modules', '.git']) : [match];
             for (const candidate of candidates) {
                 const file = normalizePath(candidate);
-                if (!excluded.some(entry => entry === file || isSubDirectory(entry, file))) {
+                if (!excluded.some(pattern => pattern.match(file.split(path.sep).join('/')))) {
                     result.push(file);
                 }
             }

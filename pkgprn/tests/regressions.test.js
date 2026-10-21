@@ -280,3 +280,21 @@ test('files optimization retains explicitly listed main paths with a dot prefix'
     await fixture.run('--no-cleanup-files');
     assert.deepEqual(await fixture.pack(), before);
 });
+
+test('whitelist exclusions apply to hidden files and directories like npm', async t => {
+    const fixture = await packageFixture(
+        t,
+        { name: 'fixture', version: '1.0.0', files: ['dist', '!dist/**/*.map'] },
+        {
+            'dist/index.js': 'export {};',
+            'dist/.hidden/index.js.map': '{}',
+            'dist/.hidden-file.map': '{}',
+            'dist/.hidden/public.js': 'export {};',
+        }
+    );
+    const before = await fixture.pack();
+    assert.deepEqual(before, ['dist/.hidden/public.js', 'dist/index.js', 'package.json']);
+    await fixture.run();
+    assert.deepEqual(await fixture.pack(), before);
+    await assert.rejects(fixture.read('dist/.hidden/index.js.map'), { code: 'ENOENT' });
+});
