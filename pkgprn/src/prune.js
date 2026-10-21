@@ -430,9 +430,8 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
 
     await Promise.all(renamePromises);
 
-    // adjust sourcemap paths for explicit flatten only
-    // (automatic flatten is safe because the common prefix is derived from package.json references)
-    if (Array.isArray(flatten) && !skipSourcemapAdjust) {
+    // Sources outside the moved directories need rebasing for every flatten mode.
+    if (!skipSourcemapAdjust) {
         // build reverse map: normalized old path -> new path
         // so we can fix sources that point to files which themselves moved
         /** @type {Map<string, string>} */

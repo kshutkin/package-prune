@@ -572,10 +572,10 @@
         },
         {
             "id": 60,
-            "name": "auto flatten does not adjust sourcemap sources",
+            "name": "auto flatten adjusts sourcemap sources",
             "args": "--flatten --no-optimize-files --no-cleanup-files",
             "input": "dist\n  index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\n  index.js.map\n|{\"version\":3,\"sources\":[\"../src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
-            "output": "index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\nindex.js.map\n|{\"version\":3,\"sources\":[\"../src/index.ts\"],\"names\":[],\"mappings\":\"AAAA\"}\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.js.map\"\n|  ]\n|}\n|",
+            "output": "index.js\n|console.log(\"hello\")\n|//# sourceMappingURL=index.js.map\nindex.js.map\n|{\n|  \"version\": 3,\n|  \"sources\": [\n|    \"src/index.ts\"\n|  ],\n|  \"names\": [],\n|  \"mappings\": \"AAAA\"\n|}\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\",\n|    \"index.js.map\"\n|  ]\n|}\n|",
             "stdout": "preparing..\n\nℹ cleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
             "stderr": "",
             "exitCode": 0

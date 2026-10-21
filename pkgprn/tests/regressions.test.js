@@ -177,3 +177,20 @@ test('automatic flatten uses the static prefix of wildcard exports', async t => 
     assert.equal(await fixture.read('feature/index.js'), 'export {};');
     assert.equal(await fixture.read('.hidden/index.js'), 'export {};');
 });
+
+test('automatic flatten rebases sourcemap sources outside the moved directory', async t => {
+    const fixture = await packageFixture(
+        t,
+        { main: './dist/index.js', files: ['dist', 'src'] },
+        {
+            'dist/index.js': 'export {};',
+            'src/index.js': 'export {};',
+            'dist/index.js.map': JSON.stringify({ version: 3, sourceRoot: '../', sources: ['src/index.js'], names: [], mappings: 'AAAA' }),
+        }
+    );
+    await fixture.run('--flatten');
+    const map = JSON.parse(await fixture.read('index.js.map'));
+    assert.deepEqual(map.sources, ['src/index.js']);
+    assert.equal(map.sourceRoot, undefined);
+    assert.equal(await fixture.read(map.sources[0]), 'export {};');
+});
