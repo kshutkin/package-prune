@@ -31,21 +31,24 @@ export function extractReferences(pkg) {
     }
 
     // Export targets can be strings, conditional/subpath objects, or fallback arrays.
-    /** @param {unknown} target */
-    function collectExportReferences(target) {
+    /** @param {unknown} target
+     * @param {boolean} [localOnly]
+     */
+    function collectExportReferences(target, localOnly = false) {
         if (typeof target === 'string') {
-            result.push(target);
+            if (!localOnly || target.startsWith('./')) result.push(target);
         } else if (Array.isArray(target)) {
             for (const item of target) {
-                collectExportReferences(item);
+                collectExportReferences(item, localOnly);
             }
         } else if (typeof target === 'object' && target !== null) {
             for (const value of Object.values(target)) {
-                collectExportReferences(value);
+                collectExportReferences(value, localOnly);
             }
         }
     }
     collectExportReferences(pkg.exports);
+    collectExportReferences(pkg.imports, true);
 
     // typesVersions.*.* — 2 levels of wildcard, arrays are flattened
     if (typeof pkg.typesVersions === 'object' && pkg.typesVersions !== null && !Array.isArray(pkg.typesVersions)) {

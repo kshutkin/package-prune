@@ -25,6 +25,7 @@ export async function packageFixture(t, pkg, files) {
                 .files.map(file => file.path)
                 .sort();
         },
+        node: (...args) => exec(process.execPath, args, { cwd }),
         run: (...args) => exec(process.execPath, [cli, ...args], { cwd }),
     };
 }

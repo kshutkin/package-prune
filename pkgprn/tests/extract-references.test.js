@@ -286,3 +286,16 @@ describe('extractReferences', () => {
         ]);
     });
 });
+
+test('extracts only local paths from private import maps', () => {
+    assert.deepStrictEqual(
+        extractReferences({
+            imports: {
+                '#local': { node: ['./dist/node.js', './dist/fallback.js'] },
+                '#external': 'external-package',
+                '#builtin': 'node:fs',
+            },
+        }),
+        ['./dist/node.js', './dist/fallback.js']
+    );
+});

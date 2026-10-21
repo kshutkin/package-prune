@@ -96,7 +96,7 @@ Keeps everything from the `library` profile, plus runtime and test lifecycle scr
 
 ## Flattening
 
-Flattening moves files from a dist directory (e.g. `dist/`) into the package root and updates all references in `package.json` (`main`, `module`, `exports`, `bin`, `types`, `typesVersions`, etc.) accordingly.
+Flattening moves files from a dist directory (e.g. `dist/`) into the package root and updates all references in `package.json` (`main`, `module`, `exports`, `imports`, `bin`, `types`, `typesVersions`, etc.) accordingly.
 
 ### Auto-detect
 

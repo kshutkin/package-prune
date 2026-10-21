@@ -67,3 +67,19 @@ for (const files of [[], ['README.md'], ['missing/**/*.js']]) {
         assert.deepEqual((await fixture.pkg()).files, []);
     });
 }
+
+test('flatten preserves package-local private imports and external targets', async t => {
+    const fixture = await packageFixture(
+        t,
+        {
+            type: 'module',
+            exports: './dist/index.js',
+            files: ['dist'],
+            imports: { '#private': { default: './dist/private.js' }, '#external': 'node:fs' },
+        },
+        { 'dist/index.js': "import value from '#private'; console.log(value);", 'dist/private.js': 'export default 42;' }
+    );
+    await fixture.run('--flatten');
+    assert.deepEqual((await fixture.pkg()).imports, { '#private': { default: './private.js' }, '#external': 'node:fs' });
+    assert.equal((await fixture.node('index.js')).stdout.trim(), '42');
+});
