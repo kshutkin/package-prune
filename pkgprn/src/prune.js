@@ -609,7 +609,7 @@ function isSubDirectory(parent, child) {
  */
 async function isEmptyDir(dir) {
     const entries = await readdir(dir, { withFileTypes: true });
-    return entries.filter(entry => !entry.isDirectory()).length === 0;
+    return entries.length === 0;
 }
 
 /**
