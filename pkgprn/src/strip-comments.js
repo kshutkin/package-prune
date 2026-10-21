@@ -96,9 +96,10 @@ function classifyBlockComment(source, start, end) {
  * - Block comments (`/* … *​/`)
  *
  * @param {string} source
+ * @param {{ start: number, end: number }[]} [literals]
  * @returns {CommentRange[]}
  */
-export function scanComments(source) {
+export function scanComments(source, literals = []) {
     /** @type {CommentRange[]} */
     const comments = [];
     const len = source.length;
@@ -160,28 +161,34 @@ export function scanComments(source) {
 
         // ---- regex literal ------------------------------------------------
         if (ch === 0x2f /* / */ && !exprEnd) {
+            const start = i;
             i = skipRegex(source, i, len);
+            literals.push({ start, end: i });
             exprEnd = true; // a regex is a value
             continue;
         }
 
         // ---- single-quoted string ----------------------------------------
         if (ch === 0x27 /* ' */) {
+            const start = i;
             i = skipSingleString(source, i, len);
+            literals.push({ start, end: i });
             exprEnd = true;
             continue;
         }
 
         // ---- double-quoted string ----------------------------------------
         if (ch === 0x22 /* " */) {
+            const start = i;
             i = skipDoubleString(source, i, len);
+            literals.push({ start, end: i });
             exprEnd = true;
             continue;
         }
 
         // ---- template literal --------------------------------------------
         if (ch === 0x60 /* ` */) {
-            i = scanTemplateTail(source, i + 1, len, templateStack, comments);
+            i = scanTemplateTail(source, i + 1, len, templateStack, literals);
             exprEnd = true;
             continue;
         }
@@ -193,7 +200,7 @@ export function scanComments(source) {
                 if (depth === 0) {
                     // Returning from a template expression back to the template body.
                     templateStack.pop();
-                    i = scanTemplateTail(source, i + 1, len, templateStack, comments);
+                    i = scanTemplateTail(source, i + 1, len, templateStack, literals);
                     exprEnd = true;
                     continue;
                 }
@@ -411,11 +418,11 @@ function isRegexFlag(ch) {
  * @param {number} i - index right after the `` ` `` or `}`
  * @param {number} len
  * @param {number[]} templateStack
- * @param {CommentRange[]} comments - passed through so inner comments are recorded
+ * @param {{ start: number, end: number }[]} literals - raw template ranges to preserve
  * @returns {number} new index
  */
-function scanTemplateTail(s, i, len, templateStack, comments) {
-    void comments; // comments only found inside ${} which returns to main loop
+function scanTemplateTail(s, i, len, templateStack, literals) {
+    const start = i;
     while (i < len) {
         const ch = s.charCodeAt(i);
         if (ch === 0x5c /* \ */) {
@@ -424,11 +431,13 @@ function scanTemplateTail(s, i, len, templateStack, comments) {
         }
         if (ch === 0x60 /* ` */) {
             i++; // closing backtick
+            literals.push({ start, end: i });
             return i;
         }
         if (ch === 0x24 /* $ */ && i + 1 < len && s.charCodeAt(i + 1) === 0x7b /* { */) {
             i += 2; // skip ${
             templateStack.push(0); // push new brace depth for this expression
+            literals.push({ start, end: i });
             return i; // return to main loop for expression parsing
         }
         i++;
@@ -596,11 +605,15 @@ export function stripCommentsWithLineMap(source, typesToStrip) {
 
     // --- Apply cleanup (same logic as before) ------------------------------
 
-    // Trim trailing whitespace from every line.
-    intermediate = intermediate.replace(/[ \t]+$/gm, '');
-
-    // Collapse 3+ consecutive newlines into 2 newlines.
-    intermediate = intermediate.replace(/\n{3,}/g, '\n\n');
+    /** @type {{ start: number, end: number }[]} */
+    const literals = [];
+    scanComments(intermediate, literals);
+    intermediate = intermediate.replace(/[ \t]+$|\n{3,}/gm, (whitespace, offset) => {
+        if (literals.some(({ start, end }) => offset < end && offset + whitespace.length > start)) {
+            return whitespace;
+        }
+        return whitespace.startsWith('\n') ? '\n\n' : '';
+    });
 
     // Remove leading blank lines (preserve hashbang).
     if (intermediate.startsWith('#!')) {
@@ -624,7 +637,7 @@ export function stripCommentsWithLineMap(source, typesToStrip) {
     // --- Build intermediate-line → final-line mapping ----------------------
     // The cleanup may have removed/collapsed lines from the intermediateText.
     // We line up intermediateText lines with final lines by content matching.
-    const finalLines = result.split('\n');
+    const finalLines = result.split('\n').map(line => line.replace(/[ \t]+$/, ''));
     const intLines = intermediateText.split('\n');
 
     // Trim trailing WS from intermediate lines to match what cleanup did.
