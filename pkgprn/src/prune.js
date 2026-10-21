@@ -451,15 +451,15 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
     const cleanedDirs = [];
     for (const [, info] of distDirInfo) {
         let cleanedDir = info.relativeDistDir;
-        while (await isEmptyDir(cleanedDir)) {
+        while ((await isDirectory(cleanedDir)) && (await isEmptyDir(cleanedDir))) {
             await rm(cleanedDir, { recursive: true, force: true });
+            cleanedDirs.push(normalizePath(cleanedDir));
             const parentDir = path.dirname(cleanedDir);
             if (parentDir === '.') {
                 break;
             }
             cleanedDir = parentDir;
         }
-        cleanedDirs.push(normalizePath(cleanedDir));
     }
 
     const allReferencesSet = new Set(allReferences);

@@ -235,3 +235,31 @@ test('comment stripping preserves mapping directives unless map removal is reque
     assert.equal(await fixture.read('index.js'), 'const x = 1;\n');
     await assert.rejects(fixture.read('index.js.map'), { code: 'ENOENT' });
 });
+
+test('partial flatten preserves sibling whitelist entries with cleanup disabled', async t => {
+    const fixture = await packageFixture(
+        t,
+        { name: 'fixture', version: '1.0.0', exports: { '.': './dist/esm/index.js' }, files: ['dist'] },
+        {
+            'dist/esm/index.js': 'export {};',
+            'dist/assets/theme.css': 'body {}',
+        }
+    );
+    await fixture.run('--flatten=dist/esm', '--no-cleanup-files');
+    assert.deepEqual(await fixture.pack(), ['dist/assets/theme.css', 'index.js', 'package.json']);
+});
+
+test('flatten handles selected siblings sharing an empty parent', async t => {
+    const fixture = await packageFixture(
+        t,
+        { exports: { import: './dist/esm/index.mjs', require: './dist/cjs/index.cjs' }, files: ['dist'] },
+        {
+            'dist/esm/index.mjs': 'export {};',
+            'dist/cjs/index.cjs': 'module.exports = {};',
+        }
+    );
+    await fixture.run('--flatten=dist/esm,dist/cjs');
+    assert.deepEqual((await fixture.pkg()).exports, { import: './index.mjs', require: './index.cjs' });
+    assert.equal(await fixture.read('index.mjs'), 'export {};');
+    assert.equal(await fixture.read('index.cjs'), 'module.exports = {};');
+});
