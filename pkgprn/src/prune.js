@@ -609,7 +609,12 @@ function isSubDirectory(parent, child) {
  */
 async function isEmptyDir(dir) {
     const entries = await readdir(dir, { withFileTypes: true });
-    return entries.length === 0;
+    for (const entry of entries) {
+        if (!entry.isDirectory() || !(await isEmptyDir(path.join(dir, entry.name)))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**

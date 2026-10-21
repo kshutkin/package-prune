@@ -54,3 +54,19 @@ test('cleanup preserves main and bin ancestors while removing unlisted siblings'
     await assert.rejects(fixture.read('dist/private.js'), { code: 'ENOENT' });
     await assert.rejects(fixture.read('tools/private.js'), { code: 'ENOENT' });
 });
+
+test('flatten cleanup removes empty descendant directories', async t => {
+    const fixture = await packageFixture(
+        t,
+        { main: './dist/sub/index.js', files: ['dist'] },
+        {
+            'dist/sub/index.js': 'export {};',
+            'dist/sub/deep/extra.js': 'export {};',
+        }
+    );
+    await fixture.run('--flatten=dist/sub');
+    assert.equal(await fixture.read('deep/extra.js'), 'export {};');
+    await assert.rejects(fixture.read('dist/sub/index.js'), { code: 'ENOENT' });
+    const { readdir } = await import('node:fs/promises');
+    assert.ok(!(await readdir(fixture.cwd)).includes('dist'));
+});
