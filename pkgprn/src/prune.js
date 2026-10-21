@@ -1,4 +1,4 @@
-import { access, glob as fsGlob, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { access, glob as fsGlob, lstat, mkdir, readdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Minimatch } from 'minimatch';
@@ -115,11 +115,11 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (options.removeSourcemaps) {
-        const sourceMaps = await walkDir('.', ['node_modules', '.git']).then(files => files.filter(file => file.endsWith('.map')));
+        const sourceMaps = await walkDir('.', ['node_modules', '.git'], false).then(files => files.filter(file => file.endsWith('.map')));
         for (const sourceMap of sourceMaps) {
             // find corresponding file
             const sourceFile = sourceMap.slice(0, -4);
-            if (await isExists(sourceFile)) {
+            if ((await isExists(sourceFile)) && !(await lstat(sourceFile)).isSymbolicLink()) {
                 const content = await readFile(sourceFile, 'utf8');
                 await writeFile(sourceFile, removeSourceMappingComments(content, sourceFile), 'utf8');
             }
@@ -136,7 +136,7 @@ export async function prunePkg(pkg, options, logger) {
     if (options.stripComments) {
         const typesToStrip = parseCommentTypes(options.stripComments);
         logger.update('stripping comments...');
-        const allFiles = await walkDir('.', ['node_modules', '.git']);
+        const allFiles = await walkDir('.', ['node_modules', '.git'], false);
         const jsFiles = allFiles.filter(isStrippableFile);
         const dtsMapFiles = allFiles.filter(f => f.endsWith('.d.ts.map'));
 
@@ -181,7 +181,7 @@ export async function prunePkg(pkg, options, logger) {
         }
     }
 
-    if (pkg.files && Array.isArray(pkg.files) && options.optimizeFiles) {
+    if (pkg.files && Array.isArray(pkg.files) && options.optimizeFiles && !options.cleanupFiles) {
         // npm does not implicitly include main when it starts with './'.
         const filterFiles = getAlwaysIncludedFiles(pkg).filter(file => !pkg.main?.startsWith('./') || file !== normalizePath(pkg.main));
 
@@ -338,6 +338,9 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
 
     for (const distDir of distDirs) {
         const relativeDistDir = `./${distDir}`;
+        if (!(await isDirectory(relativeDistDir)) || !isSubDirectory(await realpath('.'), await realpath(relativeDistDir))) {
+            throw new Error(`cannot flatten outside the package or through a symlink: ${distDir}`);
+        }
         const files = await walkDir(relativeDistDir);
         distDirInfo.set(distDir, { distDir, relativeDistDir, files });
     }
@@ -602,7 +605,7 @@ async function adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew) {
  */
 function isSubDirectory(parent, child) {
     const rel = path.relative(parent, child);
-    return rel !== '' && !rel.startsWith('..');
+    return rel !== '' && rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel);
 }
 
 /**
@@ -625,7 +628,7 @@ async function isEmptyDir(dir) {
  */
 async function isDirectory(file) {
     try {
-        const fileStat = await stat(file);
+        const fileStat = await lstat(file);
         return fileStat.isDirectory();
     } catch (e) {
         if (typeof e === 'object' && e != null && 'code' in e && e.code === 'ENOENT') {
@@ -638,9 +641,10 @@ async function isDirectory(file) {
 /**
  * @param {string} dir
  * @param {Array<string>} [ignoreDirs=[]]
+ * @param {boolean} [includeSymlinks=true]
  * @returns {Promise<Array<string>>}
  */
-async function walkDir(dir, ignoreDirs = []) {
+async function walkDir(dir, ignoreDirs = [], includeSymlinks = true) {
     const entries = await readdir(dir, { withFileTypes: true });
     /**
      * @type {string[]}
@@ -649,7 +653,7 @@ async function walkDir(dir, ignoreDirs = []) {
 
     // Process files first
     for (const entry of entries) {
-        if (!entry.isDirectory()) {
+        if (!entry.isDirectory() && (includeSymlinks || !entry.isSymbolicLink())) {
             const childPath = path.join(entry.parentPath, entry.name);
             files.push(childPath);
         }
@@ -663,7 +667,7 @@ async function walkDir(dir, ignoreDirs = []) {
             const topLevelDir = relativePath.split(path.sep)[0];
 
             if (!ignoreDirs.includes(topLevelDir)) {
-                const childFiles = await walkDir(childPath, ignoreDirs);
+                const childFiles = await walkDir(childPath, ignoreDirs, includeSymlinks);
                 files.push(...childFiles);
             }
         }
@@ -820,7 +824,7 @@ async function cleanupDir(pkg, logger) {
         }
 
         // check if any files entry is under this directory
-        if (filesEntries.some(f => f.startsWith(`${normalized}/`))) {
+        if (filesEntries.some(f => f.startsWith(`${normalized}/`)) && (await isDirectory(normalized))) {
             // need to recurse into this directory for granular cleanup
             await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
             continue;
@@ -866,7 +870,7 @@ async function cleanupSubDir(dir, filesEntries, alwaysIncludedFiles) {
         }
 
         // check if any files entry is under this path
-        if (filesEntries.some(f => f.startsWith(`${normalized}/`))) {
+        if (filesEntries.some(f => f.startsWith(`${normalized}/`)) && (await isDirectory(normalized))) {
             await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
             continue;
         }
