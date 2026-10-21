@@ -70,3 +70,29 @@ test('flatten cleanup removes empty descendant directories', async t => {
     const { readdir } = await import('node:fs/promises');
     assert.ok(!(await readdir(fixture.cwd)).includes('dist'));
 });
+
+test('content transformations exclude dependencies at every depth', async t => {
+    const preserved = '// dependency comment\nmodule.exports = 42;\n';
+    const fixture = await packageFixture(
+        t,
+        {},
+        {
+            'node_modules/dep/index.js': preserved,
+            'node_modules/dep/index.js.map': '{}',
+            'packages/demo/node_modules/dep/index.js': preserved,
+            'packages/demo/node_modules/dep/index.js.map': '{}',
+            '.git/fixture.js': preserved,
+            '.git/fixture.js.map': '{}',
+            '.hidden/local.js': '// local comment\nconst local = 1;\n',
+            '.hidden/local.js.map': '{}',
+        }
+    );
+    await fixture.run('--strip-comments', '--remove-sourcemaps');
+    for (const dir of ['node_modules/dep', 'packages/demo/node_modules/dep', '.git']) {
+        const file = dir === '.git' ? 'fixture.js' : 'index.js';
+        assert.equal(await fixture.read(`${dir}/${file}`), preserved);
+        assert.equal(await fixture.read(`${dir}/${file}.map`), '{}');
+    }
+    assert.equal(await fixture.read('.hidden/local.js'), 'const local = 1;\n');
+    await assert.rejects(fixture.read('.hidden/local.js.map'), { code: 'ENOENT' });
+});

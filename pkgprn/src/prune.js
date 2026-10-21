@@ -112,7 +112,7 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (options.removeSourcemaps) {
-        const sourceMaps = await walkDir('.', ['node_modules']).then(files => files.filter(file => file.endsWith('.map')));
+        const sourceMaps = await walkDir('.', ['node_modules', '.git']).then(files => files.filter(file => file.endsWith('.map')));
         for (const sourceMap of sourceMaps) {
             // find corresponding file
             const sourceFile = sourceMap.slice(0, -4);
@@ -137,7 +137,7 @@ export async function prunePkg(pkg, options, logger) {
     if (options.stripComments) {
         const typesToStrip = parseCommentTypes(options.stripComments);
         logger.update('stripping comments...');
-        const allFiles = await walkDir('.', ['node_modules']);
+        const allFiles = await walkDir('.', ['node_modules', '.git']);
         const jsFiles = allFiles.filter(isStrippableFile);
         const dtsMapFiles = allFiles.filter(f => f.endsWith('.d.ts.map'));
 
@@ -661,7 +661,7 @@ async function walkDir(dir, ignoreDirs = []) {
             const topLevelDir = relativePath.split(path.sep)[0];
 
             if (!ignoreDirs.includes(topLevelDir)) {
-                const childFiles = await walkDir(childPath);
+                const childFiles = await walkDir(childPath, ignoreDirs);
                 files.push(...childFiles);
             }
         }
