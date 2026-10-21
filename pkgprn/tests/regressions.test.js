@@ -17,3 +17,14 @@ test('flatten cleanup preserves nonempty sibling directories', async t => {
     assert.equal(await fixture.read('index.js'), 'export {};');
     assert.equal((await fixture.pkg()).main, './index.js');
 });
+
+for (const files of [[], ['missing/*.js']]) {
+    test(`empty whitelist ${JSON.stringify(files)} preserves npm package contents`, async t => {
+        const fixture = await packageFixture(t, { name: 'fixture', version: '1.0.0', files }, { 'private.txt': 'private' });
+        const before = await fixture.pack();
+        assert.deepEqual(before, ['package.json']);
+        await fixture.run();
+        assert.deepEqual(await fixture.pack(), before);
+        await assert.rejects(fixture.read('private.txt'), { code: 'ENOENT' });
+    });
+}

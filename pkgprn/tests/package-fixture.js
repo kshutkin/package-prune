@@ -19,6 +19,12 @@ export async function packageFixture(t, pkg, files) {
         cwd,
         read: file => readFile(path.join(cwd, file), 'utf8'),
         pkg: async () => JSON.parse(await readFile(path.join(cwd, 'package.json'), 'utf8')),
+        pack: async () => {
+            const { stdout } = await exec('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], { cwd });
+            return JSON.parse(stdout)[0]
+                .files.map(file => file.path)
+                .sort();
+        },
         run: (...args) => exec(process.execPath, [cli, ...args], { cwd }),
     };
 }

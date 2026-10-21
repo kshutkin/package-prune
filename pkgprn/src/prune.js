@@ -103,7 +103,7 @@ export async function prunePkg(pkg, options, logger) {
         logger('cleanup is disabled, junk files may cause flatten to fail', 2);
     }
 
-    if (pkg.files && Array.isArray(pkg.files) && pkg.files.length > 0 && options.cleanupFiles) {
+    if (pkg.files && Array.isArray(pkg.files) && options.cleanupFiles) {
         await cleanupDir(pkg, logger);
     }
 

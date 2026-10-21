@@ -316,7 +316,7 @@
             "args": "",
             "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": []\n|}",
             "output": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\"\n|}\n|",
-            "stdout": "preparing..\n\n",
+            "stdout": "preparing..\n\ncleaning up files...\n",
             "stderr": "",
             "exitCode": 0
         },
