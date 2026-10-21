@@ -28,3 +28,29 @@ for (const files of [[], ['missing/*.js']]) {
         await assert.rejects(fixture.read('private.txt'), { code: 'ENOENT' });
     });
 }
+
+test('cleanup preserves main and bin ancestors while removing unlisted siblings', async t => {
+    const fixture = await packageFixture(
+        t,
+        {
+            name: 'fixture',
+            version: '1.0.0',
+            main: './dist/index.js',
+            bin: { fixture: './tools/bin/cli.js' },
+            files: ['assets'],
+        },
+        {
+            'dist/index.js': 'export {};',
+            'dist/private.js': 'private',
+            'tools/bin/cli.js': '#!/usr/bin/env node',
+            'tools/private.js': 'private',
+            'assets/theme.css': 'body {}',
+        }
+    );
+    await fixture.run();
+    assert.deepEqual(await fixture.pack(), ['assets/theme.css', 'dist/index.js', 'package.json', 'tools/bin/cli.js']);
+    assert.equal(await fixture.read('dist/index.js'), 'export {};');
+    assert.equal(await fixture.read('tools/bin/cli.js'), '#!/usr/bin/env node');
+    await assert.rejects(fixture.read('dist/private.js'), { code: 'ENOENT' });
+    await assert.rejects(fixture.read('tools/private.js'), { code: 'ENOENT' });
+});

@@ -787,7 +787,7 @@ async function cleanupDir(pkg, logger) {
     logger.update('cleaning up files...');
 
     const alwaysIncludedFiles = getAlwaysIncludedFiles(pkg);
-    const filesEntries = /** @type {string[]} */ (pkg.files).map(normalizePath);
+    const filesEntries = [.../** @type {string[]} */ (pkg.files).map(normalizePath), ...alwaysIncludedFiles];
 
     const entries = await readdir('.');
 
