@@ -515,7 +515,7 @@
             "name": "flatten with cleanup disabled warns about junk files",
             "args": "--flatten --no-cleanup-files",
             "input": "dist\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
-            "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\"\n|}\n|",
+            "output": "index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"index.js\"\n|  ]\n|}\n|",
             "stdout": "preparing..\n\nℹ cleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
             "stderr": "",
             "exitCode": 0

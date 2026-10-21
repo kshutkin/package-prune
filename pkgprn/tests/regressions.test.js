@@ -263,3 +263,20 @@ test('flatten handles selected siblings sharing an empty parent', async t => {
     assert.equal(await fixture.read('index.mjs'), 'export {};');
     assert.equal(await fixture.read('index.cjs'), 'module.exports = {};');
 });
+
+test('files optimization retains explicitly listed main paths with a dot prefix', async t => {
+    const fixture = await packageFixture(
+        t,
+        {
+            name: 'fixture',
+            version: '1.0.0',
+            main: './dist/index.js',
+            files: ['dist/index.js', 'assets'],
+        },
+        { 'dist/index.js': 'export {};', 'assets/theme.css': 'body {}', 'private.txt': 'private' }
+    );
+    const before = await fixture.pack();
+    assert.ok(before.includes('dist/index.js'));
+    await fixture.run('--no-cleanup-files');
+    assert.deepEqual(await fixture.pack(), before);
+});

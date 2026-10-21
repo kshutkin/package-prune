@@ -180,7 +180,8 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (pkg.files && Array.isArray(pkg.files) && options.optimizeFiles) {
-        const filterFiles = getAlwaysIncludedFiles(pkg);
+        // npm does not implicitly include main when it starts with './'.
+        const filterFiles = getAlwaysIncludedFiles(pkg).filter(file => !pkg.main?.startsWith('./') || file !== normalizePath(pkg.main));
 
         const depthToFiles = new Map();
 
