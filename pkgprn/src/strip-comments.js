@@ -134,7 +134,7 @@ export function scanComments(source, literals = []) {
     // --- Hashbang ----------------------------------------------------------
     if (len >= 2 && source[0] === '#' && source[1] === '!') {
         // Skip the entire hashbang line — it is never a comment.
-        while (i < len && source[i] !== '\n') i++;
+        while (i < len && !isLineTerminator(source.charCodeAt(i))) i++;
         // exprEnd stays false (hashbang is like the start of the file)
     }
 
@@ -154,7 +154,7 @@ export function scanComments(source, literals = []) {
         if (ch === 0x2f /* / */ && i + 1 < len && source.charCodeAt(i + 1) === 0x2f /* / */) {
             const start = i;
             i += 2;
-            while (i < len && source.charCodeAt(i) !== 0x0a /* \n */) i++;
+            while (i < len && !isLineTerminator(source.charCodeAt(i))) i++;
             comments.push({ start, end: i, type: 'regular' });
             // exprEnd unchanged (comments are transparent)
             continue;
@@ -293,6 +293,11 @@ export function scanComments(source, literals = []) {
 // Character classification helpers
 // ---------------------------------------------------------------------------
 
+/** @param {number} ch */
+function isLineTerminator(ch) {
+    return ch === 0x0a || ch === 0x0d || ch === 0x2028 || ch === 0x2029;
+}
+
 /**
  * @param {number} ch - char code
  * @returns {boolean}
@@ -348,7 +353,7 @@ function skipSingleString(s, i, len) {
             i += 2;
             continue;
         } // escape
-        if (ch === 0x0a /* \n */ || ch === 0x0d /* \r */) break; // unterminated
+        if (isLineTerminator(ch)) break; // unterminated
         i++;
     }
     return i;
@@ -374,7 +379,7 @@ function skipDoubleString(s, i, len) {
             i += 2;
             continue;
         }
-        if (ch === 0x0a || ch === 0x0d) break; // unterminated
+        if (isLineTerminator(ch)) break; // unterminated
         i++;
     }
     return i;
@@ -410,7 +415,7 @@ function skipRegex(s, i, len) {
                     i++;
                     break;
                 }
-                if (cc === 0x0a || cc === 0x0d) break; // safety: unterminated
+                if (isLineTerminator(cc)) break; // safety: unterminated
                 i++;
             }
             continue;
@@ -421,7 +426,7 @@ function skipRegex(s, i, len) {
             while (i < len && isRegexFlag(s.charCodeAt(i))) i++;
             break;
         }
-        if (ch === 0x0a || ch === 0x0d) break; // unterminated on this line
+        if (isLineTerminator(ch)) break; // unterminated on this line
         i++;
     }
     return i;

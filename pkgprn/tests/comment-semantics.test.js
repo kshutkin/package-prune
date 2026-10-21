@@ -57,3 +57,9 @@ for (const source of [
         assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
     });
 }
+for (const terminator of ['\r', '\r\n', '\u2028', '\u2029']) {
+    test(`line comments end at ${JSON.stringify(terminator)}`, () => {
+        const source = `const x=1; // comment${terminator}const y=2; y;`;
+        assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
+    });
+}
