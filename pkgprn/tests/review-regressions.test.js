@@ -98,6 +98,23 @@ for (const files of [[], ['README.md'], ['missing/**/*.js']]) {
     });
 }
 
+for (const files of [['dist', 'optional/types/index.d.ts'], ['missing/deep/index.js'], ['dist/index.js', 'missing/deep/index.js']]) {
+    test(`optimization skips absent whitelist ancestors for ${JSON.stringify(files)}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { name: 'fixture', version: '1.0.0', files },
+            {
+                'dist/index.js': 'export {};',
+                'dist/private.js': 'private',
+            }
+        );
+        const before = await fixture.pack();
+        await fixture.run('--no-cleanup-files');
+        assert.deepEqual(await fixture.pack(), before);
+        assert.equal(await fixture.read('dist/private.js'), 'private');
+    });
+}
+
 for (const files of [
     ['dist/file.orig'],
     ['./dist/file.orig'],

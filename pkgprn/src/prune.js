@@ -220,6 +220,7 @@ export async function prunePkg(pkg, options, logger) {
                 }
             }
             for (const [dirname, filesInDir] of mapDirToFiles) {
+                if (!(await isDirectory(dirname))) continue;
                 // find out real content of the directory
                 const realFiles = await readdir(dirname);
                 // check if all files in the directory are in the filesInDir
