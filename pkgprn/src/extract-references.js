@@ -50,6 +50,14 @@ export function extractReferences(pkg) {
     collectExportReferences(pkg.exports);
     collectExportReferences(pkg.imports, true);
 
+    if (typeof pkg.browser === 'string') {
+        result.push(pkg.browser);
+    } else if (pkg.browser && typeof pkg.browser === 'object' && !Array.isArray(pkg.browser)) {
+        for (const [key, value] of Object.entries(pkg.browser)) {
+            collectExportReferences([key, value], true);
+        }
+    }
+
     // typesVersions.*.* — 2 levels of wildcard, arrays are flattened
     if (typeof pkg.typesVersions === 'object' && pkg.typesVersions !== null && !Array.isArray(pkg.typesVersions)) {
         for (const level1 of Object.values(pkg.typesVersions)) {

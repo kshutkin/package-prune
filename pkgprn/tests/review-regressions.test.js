@@ -189,6 +189,49 @@ test('flatten preserves package-local private imports and external targets', asy
     assert.equal((await fixture.node('index.js')).stdout.trim(), '42');
 });
 
+for (const browser of ['./dist/browser.js', 'dist/browser.js']) {
+    test(`flatten discovers a browser-only string entry ${browser}`, async t => {
+        const fixture = await packageFixture(t, { browser, files: ['dist'] }, { 'dist/browser.js': 'export default 42;' });
+        await fixture.run('--flatten');
+        assert.equal((await fixture.pkg()).browser, browser.replace('dist/', ''));
+        assert.equal(await fixture.read('browser.js'), 'export default 42;');
+    });
+}
+
+for (const flatten of ['--flatten', '--flatten=dist']) {
+    test(`flatten rewrites browser map paths and preserves module aliases with ${flatten}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            {
+                main: 'dist/index.js',
+                files: ['dist'],
+                browser: {
+                    './dist/index.js': './dist/browser.js',
+                    './dist/server.js': false,
+                    fs: false,
+                    stream: './dist/shim.js',
+                    external: 'dist/index.js',
+                },
+            },
+            {
+                'dist/index.js': 'export {};',
+                'dist/browser.js': 'export {};',
+                'dist/server.js': 'export {};',
+                'dist/shim.js': 'export {};',
+            }
+        );
+        await fixture.run(flatten);
+        assert.deepEqual((await fixture.pkg()).browser, {
+            './index.js': './browser.js',
+            './server.js': false,
+            fs: false,
+            stream: './shim.js',
+            external: 'dist/index.js',
+        });
+        assert.equal((await fixture.pkg()).main, 'index.js');
+    });
+}
+
 for (const exports of [{ node: './dist/index.js', default: './dist/index.js' }, './dist/index.js', ['./dist/index.js']]) {
     test(`flatten only removes export subpath stubs for ${JSON.stringify(exports)}`, async t => {
         const fixture = await packageFixture(

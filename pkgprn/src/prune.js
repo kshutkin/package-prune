@@ -50,6 +50,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {Object.<string, string>} [devDependencies]
  * @property {string} [packageManager]
  * @property {string} [main]
+ * @property {string|Record<string, string|false>} [browser]
  * @property {string|Object.<string, string>} [bin]
  * @property {Array<string>} [files]
  * @property {Record<string, unknown>} [directories]
@@ -498,7 +499,8 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
 
     // update package.json - replace each distDir prefix in references
     const prefixes = distDirs.map(dir => `${dir}${path.sep}`);
-    const pkgClone = cloneAndUpdate(pkg, value => {
+    /** @param {string} value */
+    const updateReference = value => {
         if (!allReferencesSet.has(value)) {
             return value;
         }
@@ -509,8 +511,18 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
             }
         }
         return value;
-    });
+    };
+    const browser = pkg.browser;
+    const pkgClone = cloneAndUpdate(pkg, updateReference);
     Object.assign(pkg, pkgClone);
+    if (browser && typeof browser === 'object') {
+        pkg.browser = Object.fromEntries(
+            Object.entries(browser).map(([key, value]) => [
+                key.startsWith('./') ? updateReference(key) : key,
+                typeof value === 'string' && value.startsWith('./') ? updateReference(value) : value,
+            ])
+        );
+    }
 
     // update files
     let files = pkg.files;
