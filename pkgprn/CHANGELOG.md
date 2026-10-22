@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.8.2
+
+### Patch Changes
+
+- 0eb3b4e: Preserve regex literals around Unicode line separators, NBSP, and BOM by classifying scanner whitespace consistently.
+
 ## 0.8.1
 
 ### Patch Changes
