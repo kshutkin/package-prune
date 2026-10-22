@@ -63,3 +63,11 @@ for (const terminator of ['\r', '\r\n', '\u2028', '\u2029']) {
         assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
     });
 }
+
+for (const separator of ['\r', '\r\n', '\u2028', '\u2029', '\u00a0', '\ufeff']) {
+    for (const source of [`if${separator}(true) /[/*]/.test('*');`, `if (true)${separator}/[/*]/.test('*');`]) {
+        test(`whitespace separates tokens without changing regex context: ${JSON.stringify(source)}`, () => {
+            assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
+        });
+    }
+}

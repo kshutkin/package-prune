@@ -146,10 +146,7 @@ export function scanComments(source, literals = []) {
         const ch = source.charCodeAt(i);
 
         // ---- whitespace (skip, preserve exprEnd) --------------------------
-        // space, tab, newline, carriage return, vertical tab, form feed,
-        // BOM / NBSP (0xFEFF, 0x00A0) – we keep it simple: anything ≤ 0x20
-        // plus the two common Unicode whitespace chars.
-        if (ch <= 0x20 || ch === 0xfeff || ch === 0xa0) {
+        if (isWhitespace(ch)) {
             i++;
             continue;
         }
@@ -302,6 +299,11 @@ function isLineTerminator(ch) {
     return ch === 0x0a || ch === 0x0d || ch === 0x2028 || ch === 0x2029;
 }
 
+/** @param {number} ch */
+function isWhitespace(ch) {
+    return ch <= 0x20 || ch === 0xfeff || ch === 0xa0 || isLineTerminator(ch);
+}
+
 /**
  * @param {number} ch - char code
  * @returns {boolean}
@@ -321,7 +323,7 @@ function isIdentStart(ch) {
         ch === 0x5f || // _
         ch === 0x24 || // $
         ch === 0x5c || // \ (unicode escape in identifier)
-        ch > 0x7f // non-ASCII (simplified – covers all Unicode ID_Start)
+        (ch > 0x7f && !isWhitespace(ch)) // non-ASCII (simplified – covers all Unicode ID_Start)
     );
 }
 
