@@ -526,7 +526,7 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
     // remove extra directories with package.json
     const exports = pkg.exports ? Object.keys(pkg.exports) : [];
     for (const key of exports) {
-        if (key === '.') {
+        if (!key.startsWith('./') || !isSubDirectory('.', key)) {
             continue;
         }
         const isDir = await isDirectory(key);

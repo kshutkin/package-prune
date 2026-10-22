@@ -189,6 +189,36 @@ test('flatten preserves package-local private imports and external targets', asy
     assert.equal((await fixture.node('index.js')).stdout.trim(), '42');
 });
 
+for (const exports of [{ node: './dist/index.js', default: './dist/index.js' }, './dist/index.js', ['./dist/index.js']]) {
+    test(`flatten only removes export subpath stubs for ${JSON.stringify(exports)}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { exports, files: ['dist', 'node', 'default', '0'] },
+            {
+                'dist/index.js': 'export {};',
+                'node/package.json': '{"keep":true}',
+                'default/package.json': '{"keep":true}',
+                '0/package.json': '{"keep":true}',
+            }
+        );
+        await fixture.run('--flatten');
+        for (const dir of ['node', 'default', '0']) assert.equal(await fixture.read(`${dir}/package.json`), '{"keep":true}');
+    });
+}
+
+test('flatten still removes actual export subpath stubs', async t => {
+    const fixture = await packageFixture(
+        t,
+        { exports: { './feature': './dist/index.js' }, files: ['dist', 'feature'] },
+        {
+            'dist/index.js': 'export {};',
+            'feature/package.json': '{}',
+        }
+    );
+    await fixture.run('--flatten');
+    await assert.rejects(fixture.read('feature/package.json'), { code: 'ENOENT' });
+});
+
 for (const overlap of [true, false]) {
     test(`flatten rejects structural conflicts before moving files, overlap=${overlap}`, async t => {
         const files = overlap ? { 'dist/sub/index.js': 'original' } : { 'dist/a': 'first', 'lib/a/b.js': 'second' };
