@@ -100,12 +100,14 @@ export async function prunePkg(pkg, options, logger) {
         }
     }
 
+    const explicitFiles = [...(pkg.files ?? []).map(file => (file === './' ? file : normalizePath(file))), ...getAlwaysIncludedFiles(pkg)];
+
     if (pkg.files && Array.isArray(pkg.files)) {
         pkg.files = await expandFileGlobs(pkg.files);
     }
 
     if (options.cleanupFiles) {
-        await removeJunkFiles('.');
+        await removeJunkFiles('.', explicitFiles, [...(pkg.files ?? []).map(normalizePath), ...explicitFiles]);
     } else if (options.flatten) {
         logger('cleanup is disabled, junk files may cause flatten to fail', 2);
     }
@@ -268,7 +270,9 @@ export async function prunePkg(pkg, options, logger) {
         pkg.files = pkg.files.filter(dir => !ignoreDirs.includes(dir));
     }
 
-    if (options.cleanupFiles && !pkg.files?.includes('./')) {
+    // Keep overrides that npm would otherwise replace with its default ignore rules.
+    const preserveFiles = pkg.files?.some(file => file === './' || normalizePath(file).split(path.sep).some(isAlwaysIgnored));
+    if (options.cleanupFiles && !preserveFiles) {
         pkg.files = undefined;
     }
 }
@@ -764,18 +768,25 @@ function isAlwaysIgnored(basename) {
 /**
  * Recursively removes junk files (always-ignored by npm) from a directory tree.
  * @param {string} dir
+ * @param {string[]} explicitFiles - Literal whitelist entries and always-included paths.
+ * @param {string[]} selectedFiles - Expanded paths whose parent directories must survive.
  */
-async function removeJunkFiles(dir) {
+async function removeJunkFiles(dir, explicitFiles, selectedFiles) {
     const entries = await readdir(dir, { withFileTypes: true });
     for (const entry of entries) {
         if (hardIgnored.has(entry.name)) {
             continue;
         }
         const fullPath = path.join(dir, entry.name);
-        if (isAlwaysIgnored(entry.name)) {
+        const included =
+            explicitFiles.includes(fullPath) ||
+            (dir === '.' && explicitFiles.includes('./')) ||
+            selectedFiles.some(file => file.startsWith(`${fullPath}/`)) ||
+            isAlwaysIncludedByBasename(fullPath);
+        if (isAlwaysIgnored(entry.name) && !included) {
             await rm(fullPath, { recursive: true, force: true });
         } else if (entry.isDirectory()) {
-            await removeJunkFiles(fullPath);
+            await removeJunkFiles(fullPath, explicitFiles, selectedFiles);
         }
     }
 }

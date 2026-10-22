@@ -74,6 +74,39 @@ for (const files of [[], ['README.md'], ['missing/**/*.js']]) {
     });
 }
 
+for (const files of [
+    ['dist/file.orig'],
+    ['./dist/file.orig'],
+    ['dist', '!dist/drop.orig', 'dist/file.orig'],
+    ['CVS'],
+    ['CVS/public.js'],
+    ['CVS/*'],
+    ['dist'],
+    ['dist/*.orig'],
+    ['./'],
+]) {
+    test(`junk cleanup honors explicit whitelist ${JSON.stringify(files)}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { name: 'fixture', version: '1.0.0', files },
+            {
+                'dist/file.orig': 'explicit',
+                'dist/drop.orig': 'junk',
+                'dist/index.js': 'export {};',
+                'CVS/public.js': 'explicit',
+                'CVS/drop.orig': 'junk',
+                'README.orig': 'always included',
+                'file.orig': 'root file',
+                '.DS_Store': 'root artifact',
+            }
+        );
+        const before = await fixture.pack();
+        await fixture.run();
+        assert.deepEqual(await fixture.pack(), before);
+        if (before.includes('dist/file.orig')) assert.equal(await fixture.read('dist/file.orig'), 'explicit');
+    });
+}
+
 for (const files of [[], ['README.en.md', 'License.MIT.txt', 'LICENCE.fr.md']]) {
     for (const cleanup of [true, false]) {
         test(`multi-extension documentation is always included with files=${JSON.stringify(files)}, cleanup=${cleanup}`, async t => {
