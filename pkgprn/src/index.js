@@ -57,7 +57,7 @@ try {
                     default: false,
                 },
                 stripComments: {
-                    type: /** @type {(values: string[]) => true | string[]} */ (parseMultiString),
+                    type: /** @type {(values: string[]) => true | string[]} */ (values => parseMultiString(values, 'all')),
                     multiple: true,
                     optionalValue: true,
                     description: 'strip comments (omit value for defaults, or specify types: jsdoc, license, regular, annotation)',

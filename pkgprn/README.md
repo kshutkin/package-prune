@@ -231,7 +231,7 @@ await prunePkg(
         profile: "library",
         flatten: false, // or true for auto-detect, or ["dist"] / ["dist", "lib"]
         removeSourcemaps: false,
-        stripComments: false, // or "all" (jsdoc+regular), "jsdoc", "license", "annotation", etc.
+        stripComments: false, // or true (jsdoc+regular), ["jsdoc"], ["license"], ["annotation"], etc.
         optimizeFiles: true,
         cleanupFiles: true,
     },
