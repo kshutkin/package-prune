@@ -16,14 +16,15 @@ import { prunePkg } from './prune.js';
  * Parse a multi-value string option: split by commas, trim, and filter empty strings.
  * Empty result (from bare --flag usage) signals "use defaults" → true.
  * @param {string[]} values
+ * @param {string} [defaultAlias]
  * @returns {true | string[]}
  */
-function parseMultiString(values) {
+function parseMultiString(values, defaultAlias) {
     const items = values
         .flatMap(v => v.split(','))
         .map(s => s.trim())
         .filter(Boolean);
-    return items.length ? items : true;
+    return !items.length || (items.length === 1 && items[0] === defaultAlias) ? true : items;
 }
 
 const logger = createLogger();
@@ -45,7 +46,7 @@ try {
                     default: 'library',
                 },
                 flatten: {
-                    type: /** @type {(values: string[]) => true | string[]} */ (parseMultiString),
+                    type: /** @type {(values: string[]) => true | string[]} */ (values => parseMultiString(values, 'auto')),
                     multiple: true,
                     optionalValue: true,
                     description: 'flatten package files (omit value to auto-detect, or specify directories)',
