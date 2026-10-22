@@ -15,6 +15,6 @@
         "@biomejs/biome": "2.4.4",
         "@changesets/cli": "2.29.8",
         "@types/node": "24.x",
-        "dts-buddy": "^0.7.0"
+        "dts-buddy": "^0.8.0"
     }
 }
