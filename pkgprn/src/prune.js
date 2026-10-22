@@ -808,7 +808,7 @@ async function expandFileGlobs(files) {
     const rules = files.map(entry => {
         const exclude = entry.startsWith('!');
         const pattern = (exclude ? entry.slice(1) : entry).replace(/^(?:\.\/)+/, '').replace(/\/+$/, '');
-        const options = { dot: true, nonegate: true, nocomment: true };
+        const options = { dot: true, nonegate: true, nocomment: true, magicalBraces: true };
         return { exclude, matcher: new Minimatch(pattern, options), contents: new Minimatch(`${pattern}/**`, options) };
     });
     // Literal whitelist entries already preserve directory and npmignore semantics.
