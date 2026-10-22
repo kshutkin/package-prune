@@ -28,7 +28,13 @@ for (const operation of ['cleanup', 'comments', 'maps', 'flatten']) {
     });
 }
 
-for (const files of [['dist/**/*.js'], ['dist', '!dist/*.map', 'dist/keep.map'], ['dist/@(a|b).js'], ['dist/{a,b}.js'], ['dist/{a..b}.js']]) {
+for (const files of [
+    ['dist/**/*.js'],
+    ['dist', '!dist/*.map', 'dist/keep.map'],
+    ['dist/@(a|b).js'],
+    ['dist/{a,b}.js'],
+    ['dist/{a..b}.js'],
+]) {
     for (const cleanup of [true, false]) {
         test(`ordered whitelist ${JSON.stringify(files)} matches npm with cleanup=${cleanup}`, async t => {
             const fixture = await packageFixture(
