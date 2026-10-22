@@ -1,5 +1,18 @@
 # pkgprn
 
+## 0.8.3
+
+### Patch Changes
+
+- 3efbb1f: Expand brace patterns in publish whitelists before cleanup so matching files are preserved.
+- 01ba468: Keep explicitly included files, their required parent directories, and publish whitelist overrides during junk cleanup, while retaining default exclusions for unlisted artifacts.
+- 0d31f0a: Preserve README, LICENSE, and LICENCE files with multiple dot suffixes during cleanup and whitelist optimization.
+- 81d74d2: Preserve Unicode line separators and escaped CRLF continuations inside quoted JavaScript strings when stripping comments.
+- 120723d: Preserve explicit `./` publish whitelists and their root ignore overrides instead of deleting package contents during cleanup.
+- 3d154c5: Recognize all JavaScript Unicode whitespace consistently at token boundaries and exclude it from identifier characters.
+- 7fde7a1: Distinguish expression bodies and object literals from statement blocks when scanning division and subsequent regex literals.
+- 4de6d2c: Preserve regex literals after do and line-terminated jump statements, and distinguish for-of separators from ordinary of identifiers.
+
 ## 0.8.2
 
 ### Patch Changes
