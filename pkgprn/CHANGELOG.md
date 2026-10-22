@@ -1,5 +1,18 @@
 # pkgprn
 
+## 0.8.4
+
+### Patch Changes
+
+- ab02668: Discover browser entry points during automatic flattening and rewrite local browser replacement keys and values, preserving dependency aliases and false targets.
+- 57b161d: Honor the documented `--strip-comments all` alias for default comment types, preserving license and annotation comments unless explicitly requested.
+- 15ad8b5: Honor the documented `--flatten auto` alias for automatic directory detection.
+- 2e107f8: Reject symlink sourcemaps before flattening moves files, preventing rebasing from modifying external symlink targets.
+- 89346a7: Adjust `.d.mts.map` and `.d.cts.map` source positions and embedded contents when their referenced JavaScript files have comments stripped.
+- 7397a54: Remove source mapping directives from JavaScript, TypeScript, declarations, and CSS independently of map filenames, including inline maps and custom relative URLs.
+- 9a2a71b: Restrict flatten stub cleanup to package-local export subpaths, preserving directories named after root conditions or array indices.
+- 8d13f4d: Skip nonexistent parent directories when optimizing publish whitelists, allowing optional output paths without failing pruning.
+
 ## 0.8.3
 
 ### Patch Changes
