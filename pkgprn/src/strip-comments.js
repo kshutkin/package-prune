@@ -203,21 +203,10 @@ export function scanComments(source, literals = []) {
             continue;
         }
 
-        // ---- single-quoted string ----------------------------------------
-        if (ch === 0x27 /* ' */) {
+        // ---- quoted string -----------------------------------------------
+        if (ch === 0x27 /* ' */ || ch === 0x22 /* " */) {
             const start = i;
-            i = skipSingleString(source, i, len);
-            literals.push({ start, end: i });
-            exprEnd = true;
-            statementStart = false;
-            lastToken = 'literal';
-            continue;
-        }
-
-        // ---- double-quoted string ----------------------------------------
-        if (ch === 0x22 /* " */) {
-            const start = i;
-            i = skipDoubleString(source, i, len);
+            i = skipString(source, i, len);
             literals.push({ start, end: i });
             exprEnd = true;
             statementStart = false;
@@ -408,52 +397,26 @@ function isIdentPart(ch) {
 // ---------------------------------------------------------------------------
 
 /**
- * Skip a single-quoted string starting at index `i` (which points at the
- * opening `'`). Returns the index after the closing `'`.
+ * Skip a quoted string, including escaped line continuations.
  * @param {string} s
  * @param {number} i
  * @param {number} len
  * @returns {number}
  */
-function skipSingleString(s, i, len) {
-    i++; // skip opening '
+function skipString(s, i, len) {
+    const quote = s.charCodeAt(i++);
     while (i < len) {
         const ch = s.charCodeAt(i);
-        if (ch === 0x27 /* ' */) {
+        if (ch === quote) {
             i++;
             break;
         }
-        if (ch === 0x5c /* \ */) {
-            i += 2;
-            continue;
-        } // escape
-        if (isLineTerminator(ch)) break; // unterminated
-        i++;
-    }
-    return i;
-}
-
-/**
- * Skip a double-quoted string starting at index `i` (which points at the
- * opening `"`). Returns the index after the closing `"`.
- * @param {string} s
- * @param {number} i
- * @param {number} len
- * @returns {number}
- */
-function skipDoubleString(s, i, len) {
-    i++; // skip opening "
-    while (i < len) {
-        const ch = s.charCodeAt(i);
-        if (ch === 0x22 /* " */) {
-            i++;
-            break;
-        }
-        if (ch === 0x5c /* \ */) {
-            i += 2;
+        if (ch === 0x5c /* \\ */) {
+            i += s.charCodeAt(i + 1) === 0x0d && s.charCodeAt(i + 2) === 0x0a ? 3 : 2;
             continue;
         }
-        if (isLineTerminator(ch)) break; // unterminated
+        // U+2028/U+2029 are valid unescaped characters in JavaScript strings.
+        if (ch === 0x0a || ch === 0x0d) break; // unterminated
         i++;
     }
     return i;

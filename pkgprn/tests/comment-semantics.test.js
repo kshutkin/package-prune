@@ -7,6 +7,17 @@ import { stripComments } from '../src/strip-comments.js';
 
 const regular = new Set(['regular']);
 
+for (const quote of ["'", '"']) {
+    for (const separator of ['\u2028', '\u2029', '\\\n', '\\\r', '\\\r\n', '\\\u2028', '\\\u2029']) {
+        const source = `const s = ${quote}a${separator}//b/* c */${quote}; s; // remove`;
+        test(`quoted strings preserve separators: ${JSON.stringify(source)}`, () => {
+            const stripped = stripComments(source, regular);
+            assert.equal(vm.runInNewContext(stripped), vm.runInNewContext(source));
+            assert.equal(stripped, source.slice(0, source.lastIndexOf('// remove')).trimEnd());
+        });
+    }
+}
+
 for (const source of [
     'const/*comment*/value = 1; value;',
     'let a = 1, b = 2; a +/*comment*/+b;',
