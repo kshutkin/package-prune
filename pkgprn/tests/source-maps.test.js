@@ -8,6 +8,24 @@ import { packageFixture } from './package-fixture.js';
 
 const regular = new Set(['regular']);
 
+test('declaration maps referencing unchanged TypeScript retain positions and embedded source', async t => {
+    const source = '// TypeScript source\nexport const x = 1;';
+    const map = { version: 3, sources: ['index.mts'], sourcesContent: [source], names: [], mappings: encode([[[0, 0, 1, 0]]]) };
+    const original = JSON.stringify(map);
+    const fixture = await packageFixture(
+        t,
+        {},
+        {
+            'index.mjs': '// strip this\nexport const x = 1;',
+            'index.mts': source,
+            'index.d.mts.map': original,
+        }
+    );
+    await fixture.run('--strip-comments');
+    assert.equal(await fixture.read('index.d.mts.map'), original);
+    assert.equal(await fixture.read('index.mts'), source);
+});
+
 for (const extension of ['js', 'mjs', 'cjs', 'css', 'd.ts', 'd.mts', 'd.cts']) {
     for (const target of ['debug.map', 'maps/debug.map', '../maps/debug.map', 'missing.map', 'data:application/json;base64,e30=']) {
         test(`sourcemap removal finds ${target} in ${extension} files`, async t => {
@@ -75,36 +93,40 @@ test('comment stripping remaps generated JavaScript source positions', async t =
     ]);
 });
 
-test('declaration maps track original columns and embedded source contents', async t => {
-    const line = 'const answer = /* docs */ 42;';
-    const source = `// heading\n${line}\n`;
-    const fixture = await packageFixture(
-        t,
-        {},
-        {
-            'index.js': source,
-            'index.d.ts.map': JSON.stringify({
-                version: 3,
-                sources: ['index.js', 'other.js'],
-                sourcesContent: [source, 'other'],
-                names: ['answer'],
-                mappings: encode([
-                    [
-                        [0, 0, 1, line.indexOf('42'), 0],
-                        [3, 1, 4, 6],
-                    ],
-                ]),
-            }),
-        }
-    );
-    await fixture.run('--strip-comments');
-    const stripped = await fixture.read('index.js');
-    const map = JSON.parse(await fixture.read('index.d.ts.map'));
-    assert.deepEqual(decode(map.mappings), [
-        [
-            [0, 0, 0, stripped.indexOf('42'), 0],
-            [3, 1, 4, 6],
-        ],
-    ]);
-    assert.deepEqual(map.sourcesContent, [stripped, 'other']);
-});
+for (const extension of ['ts', 'mts', 'cts']) {
+    const sourceFile = extension === 'ts' ? 'index.js' : extension === 'mts' ? 'index.mjs' : 'index.cjs';
+    const mapFile = `index.d.${extension}.map`;
+    test(`declaration maps track original columns and embedded source contents for ${extension}`, async t => {
+        const line = 'const answer = /* docs */ 42;';
+        const source = `// heading\n${line}\n`;
+        const fixture = await packageFixture(
+            t,
+            {},
+            {
+                [sourceFile]: source,
+                [mapFile]: JSON.stringify({
+                    version: 3,
+                    sources: [sourceFile, 'other.js'],
+                    sourcesContent: [source, 'other'],
+                    names: ['answer'],
+                    mappings: encode([
+                        [
+                            [0, 0, 1, line.indexOf('42'), 0],
+                            [3, 1, 4, 6],
+                        ],
+                    ]),
+                }),
+            }
+        );
+        await fixture.run('--strip-comments');
+        const stripped = await fixture.read(sourceFile);
+        const map = JSON.parse(await fixture.read(mapFile));
+        assert.deepEqual(decode(map.mappings), [
+            [
+                [0, 0, 0, stripped.indexOf('42'), 0],
+                [3, 1, 4, 6],
+            ],
+        ]);
+        assert.deepEqual(map.sourcesContent, [stripped, 'other']);
+    });
+}

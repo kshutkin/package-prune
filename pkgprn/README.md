@@ -155,7 +155,7 @@ Passing `--strip-comments` without a value (or with `all`) strips `jsdoc` and `r
 
 ### Sourcemap adjustment
 
-When comments are stripped, line numbers in the affected files change. If any `.d.ts.map` files reference a stripped JS file in their `sources`, `pkgprn` automatically rewrites the sourcemap `mappings` so that line numbers stay correct. This ensures that declaration-map "Go to Definition" navigation continues to point to the right lines after comment removal.
+When comments are stripped, source positions in the affected files change. `pkgprn` adjusts companion JavaScript maps and any `.d.ts.map`, `.d.mts.map`, or `.d.cts.map` declaration maps that reference the stripped JavaScript. Both lines and columns are remapped, and embedded declaration-map source contents are updated. Maps referencing unchanged TypeScript sources are left intact.
 
 ## Examples
 

@@ -143,7 +143,7 @@ export async function prunePkg(pkg, options, logger) {
         logger.update('stripping comments...');
         const allFiles = await walkDir('.', ['node_modules', '.git'], false);
         const jsFiles = allFiles.filter(isStrippableFile);
-        const dtsMapFiles = allFiles.filter(f => f.endsWith('.d.ts.map'));
+        const declarationMaps = allFiles.filter(f => /\.d\.[cm]?ts\.map$/.test(f));
         const mapFiles = new Set(allFiles.filter(f => f.endsWith('.map')));
 
         // Reuse the same position maps for generated and declaration mappings.
@@ -165,9 +165,9 @@ export async function prunePkg(pkg, options, logger) {
             }
         }
 
-        // Adjust .d.ts.map files that reference any of the stripped JS files.
-        if (positionMaps.size > 0 && dtsMapFiles.length > 0) {
-            for (const mapFile of dtsMapFiles) {
+        // Adjust declaration maps that reference any of the stripped JS files.
+        if (positionMaps.size > 0 && declarationMaps.length > 0) {
+            for (const mapFile of declarationMaps) {
                 const map = await readSourcemap(mapFile);
                 if (!map || !Array.isArray(map.sources)) continue;
 
