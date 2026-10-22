@@ -74,6 +74,27 @@ for (const files of [[], ['README.md'], ['missing/**/*.js']]) {
     });
 }
 
+for (const files of [[], ['README.en.md', 'License.MIT.txt', 'LICENCE.fr.md']]) {
+    for (const cleanup of [true, false]) {
+        test(`multi-extension documentation is always included with files=${JSON.stringify(files)}, cleanup=${cleanup}`, async t => {
+            const fixture = await packageFixture(
+                t,
+                { name: 'fixture', version: '1.0.0', files },
+                {
+                    'README.en.md': 'read me',
+                    'License.MIT.txt': 'license',
+                    'LICENCE.fr.md': 'licence',
+                    'README-backup.md': 'private',
+                }
+            );
+            const before = await fixture.pack();
+            await fixture.run(...(cleanup ? [] : ['--no-cleanup-files']));
+            assert.deepEqual(await fixture.pack(), before);
+            if (!cleanup) assert.deepEqual((await fixture.pkg()).files, []);
+        });
+    }
+}
+
 for (const cleanup of [true, false]) {
     test(`root-directory whitelist preserves npm contents with cleanup=${cleanup}`, async t => {
         const fixture = await packageFixture(

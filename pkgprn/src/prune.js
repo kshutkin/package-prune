@@ -10,7 +10,7 @@ import { adjustSourcemapPositions, isStrippableFile, parseCommentTypes, stripCom
 
 /**
  * Files always included by npm regardless of the `files` array.
- * README & LICENSE/LICENCE are matched case-insensitively by basename (without extension).
+ * README & LICENSE/LICENCE are matched case-insensitively before any dot suffix.
  */
 const alwaysIncludedExact = ['package.json'];
 const alwaysIncludedBasenames = ['README', 'LICENSE', 'LICENCE'];
@@ -243,12 +243,7 @@ export async function prunePkg(pkg, options, logger) {
 
         pkg.files = pkg.files.filter((/** @type {string} */ file) => {
             const fileNormalized = normalizePath(file);
-            const dirname = path.dirname(fileNormalized);
-            const basenameWithoutExtension = path.basename(fileNormalized, path.extname(fileNormalized)).toUpperCase();
-            return (
-                !filterFiles.includes(fileNormalized) &&
-                ((dirname !== '' && dirname !== '.') || !alwaysIncludedBasenames.includes(basenameWithoutExtension))
-            );
+            return !filterFiles.includes(fileNormalized) && !isAlwaysIncludedByBasename(fileNormalized);
         });
 
         /**
@@ -795,7 +790,7 @@ function isAlwaysIncludedByBasename(file) {
     if (dir !== '' && dir !== '.') {
         return false;
     }
-    const basenameWithoutExtension = path.basename(file, path.extname(file)).toUpperCase();
+    const basenameWithoutExtension = path.basename(file).split('.')[0].toUpperCase();
     return alwaysIncludedBasenames.includes(basenameWithoutExtension);
 }
 
