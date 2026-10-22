@@ -2,9 +2,10 @@ import { access, lstat, mkdir, readdir, readFile, realpath, rename, rm, writeFil
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { Minimatch } from 'minimatch';
+import { escape as escapeGlob, Minimatch } from 'minimatch';
 
 import { extractReferences } from './extract-references.js';
+import { filterNpmIgnore } from './npmignore.js';
 import { removeSourceMappingComments } from './sourcemap-comments.js';
 import { adjustSourcemapPositions, isStrippableFile, parseCommentTypes, stripCommentsWithLineMap } from './strip-comments.js';
 
@@ -22,18 +23,10 @@ const alwaysIgnored = ['.DS_Store', '.hg', '.lock-wscript', '.svn', 'CVS', 'conf
 
 /**
  * Glob-like patterns for always-ignored files.
- * Each entry has a `test` function that checks whether a basename matches.
+ * Shared by junk cleanup and npm ignore selection.
  */
-const alwaysIgnoredPatterns = [
-    /** `*.orig` */
-    { test: (/** @type {string} */ basename) => basename.endsWith('.orig') },
-    /** `.*.swp` */
-    { test: (/** @type {string} */ basename) => basename.startsWith('.') && basename.endsWith('.swp') },
-    /** `._*` */
-    { test: (/** @type {string} */ basename) => basename.startsWith('._') },
-    /** `.wafpickle-N` */
-    { test: (/** @type {string} */ basename) => /^\.wafpickle-\d+$/.test(basename) },
-];
+const alwaysIgnoredPatterns = ['*.orig', '.*.swp', '._*', '.wafpickle-+([0-9])'];
+const junkMatchers = alwaysIgnoredPatterns.map(pattern => new Minimatch(pattern, { dot: true }));
 
 /**
  * Subset of always-ignored that can never be included, even if listed in `files`.
@@ -102,9 +95,26 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     const explicitFiles = [...(pkg.files ?? []).map(file => (file === './' ? file : normalizePath(file))), ...getAlwaysIncludedFiles(pkg)];
-
-    if (pkg.files && Array.isArray(pkg.files)) {
-        pkg.files = await expandFileGlobs(pkg.files);
+    const inventory = await walkDir('.', ['node_modules', '.git'], false);
+    const hasIgnoreFiles = inventory.some(file => ['.npmignore', '.gitignore'].includes(path.basename(file)));
+    const rootWhitelist = pkg.files?.length === 1 && pkg.files[0] === './' ? pkg.files : undefined;
+    /** @type {Set<string> | undefined} */
+    let publishFiles;
+    if (hasIgnoreFiles) {
+        const required = [
+            ...explicitFiles,
+            ...inventory.filter(file => isAlwaysIncludedByBasename(file) || (rootWhitelist && path.dirname(file) === '.')),
+        ];
+        pkg.files = await filterNpmIgnore(inventory, {
+            files: pkg.files,
+            required,
+            hardIgnored,
+            defaults: [...alwaysIgnored, ...alwaysIgnoredPatterns, '.npmignore', '.gitignore'],
+        });
+        publishFiles = new Set(pkg.files);
+        explicitFiles.push(...pkg.files);
+    } else if (pkg.files && Array.isArray(pkg.files)) {
+        pkg.files = expandFileGlobs(pkg.files, inventory);
     }
 
     if (options.cleanupFiles) {
@@ -117,12 +127,14 @@ export async function prunePkg(pkg, options, logger) {
         await cleanupDir(pkg, logger);
     }
 
+    if (hasIgnoreFiles && rootWhitelist) pkg.files = rootWhitelist;
+
     if (options.flatten) {
-        await flatten(pkg, options.flatten, logger, options.removeSourcemaps);
+        await flatten(pkg, options.flatten, logger, options.removeSourcemaps, publishFiles);
     }
 
     if (options.removeSourcemaps) {
-        const allFiles = await walkDir('.', ['node_modules', '.git'], false);
+        const allFiles = (await walkDir('.', ['node_modules', '.git'], false)).filter(file => !publishFiles || publishFiles.has(file));
         const sourceMaps = allFiles.filter(file => file.endsWith('.map'));
         const companions = new Set(sourceMaps.map(file => file.slice(0, -4)));
         for (const file of allFiles) {
@@ -141,7 +153,7 @@ export async function prunePkg(pkg, options, logger) {
 
     if (typesToStrip) {
         logger.update('stripping comments...');
-        const allFiles = await walkDir('.', ['node_modules', '.git'], false);
+        const allFiles = (await walkDir('.', ['node_modules', '.git'], false)).filter(file => !publishFiles || publishFiles.has(file));
         const jsFiles = allFiles.filter(isStrippableFile);
         const declarationMaps = allFiles.filter(f => /\.d\.[cm]?ts\.map$/.test(f));
         const mapFiles = new Set(allFiles.filter(f => f.endsWith('.map')));
@@ -272,9 +284,15 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     // Keep overrides that npm would otherwise replace with its default ignore rules.
-    const preserveFiles = pkg.files?.some(file => file === './' || normalizePath(file).split(path.sep).some(isAlwaysIgnored));
+    const preserveFiles =
+        publishFiles || pkg.files?.some(file => file === './' || normalizePath(file).split(path.sep).some(isAlwaysIgnored));
     if (options.cleanupFiles && !preserveFiles) {
         pkg.files = undefined;
+    }
+    if (publishFiles && pkg.files) {
+        pkg.files = [
+            ...new Set(pkg.files.map(file => (file === './' ? file : `./${escapeGlob(normalizePath(file).split(path.sep).join('/'))}`))),
+        ];
     }
 }
 
@@ -284,8 +302,9 @@ export async function prunePkg(pkg, options, logger) {
  * @param {true|string[]} flatten
  * @param {Logger} logger
  * @param {boolean} [skipSourcemapAdjust] - skip sourcemap adjustment (e.g. when sourcemaps will be removed)
+ * @param {Set<string>} [publishFiles] - Frozen selection when ignore files are present.
  */
-async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
+async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) {
     // find out where is the dist folder
 
     const allReferences = extractReferences(pkg);
@@ -349,7 +368,7 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
         if (!(await isDirectory(relativeDistDir)) || !isSubDirectory(await realpath('.'), await realpath(relativeDistDir))) {
             throw new Error(`cannot flatten outside the package or through a symlink: ${distDir}`);
         }
-        const files = await walkDir(relativeDistDir);
+        const files = (await walkDir(relativeDistDir)).filter(file => !publishFiles || publishFiles.has(normalizePath(file)));
         distDirInfo.set(distDir, { distDir, relativeDistDir, files });
     }
 
@@ -454,6 +473,10 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
             const relativePath = path.relative(info.relativeDistDir, file);
             newFiles.push(relativePath);
             movedFiles.set(relativePath, file);
+            if (publishFiles) {
+                publishFiles.delete(normalizePath(file));
+                publishFiles.add(relativePath);
+            }
             renamePromises.push(rename(file, relativePath));
         }
     }
@@ -777,7 +800,7 @@ function isAlwaysIgnored(basename) {
     if (alwaysIgnored.includes(basename)) {
         return true;
     }
-    return alwaysIgnoredPatterns.some(pattern => pattern.test(basename));
+    return junkMatchers.some(pattern => pattern.match(basename));
 }
 
 /**
@@ -823,19 +846,23 @@ function isAlwaysIncludedByBasename(file) {
 /**
  * Resolve npm-style whitelist rules in order, including dotfiles and directory contents.
  * @param {string[]} files
- * @returns {Promise<string[]>}
+ * @param {string[]} inventory
+ * @returns {string[]}
  */
-async function expandFileGlobs(files) {
+function expandFileGlobs(files, inventory) {
     const rules = files.map(entry => {
         const exclude = entry.startsWith('!');
         const pattern = (exclude ? entry.slice(1) : entry).replace(/^(?:\.\/)+/, '').replace(/\/+$/, '');
         const options = { dot: true, nonegate: true, nocomment: true, magicalBraces: true };
-        return { exclude, matcher: new Minimatch(pattern, options), contents: new Minimatch(`${pattern}/**`, options) };
+        return {
+            exclude,
+            matcher: new Minimatch(pattern, options),
+            contents: new Minimatch(`${pattern}/**`, options),
+        };
     });
     // Literal whitelist entries already preserve directory and npmignore semantics.
-    if (rules.every(rule => !rule.exclude && !rule.matcher.hasMagic())) return files;
+    if (rules.every(rule => !rule.exclude && !rule.matcher.hasMagic() && !rule.matcher.pattern.includes('\\'))) return files;
 
-    const inventory = await walkDir('.', ['node_modules', '.git'], false);
     return inventory.filter(file => {
         const candidate = normalizePath(file).split(path.sep).join('/');
         let included = false;

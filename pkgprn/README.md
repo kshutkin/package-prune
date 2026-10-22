@@ -52,7 +52,7 @@ By default, `pkgprn` performs the following steps:
 3. **Prunes scripts** - Removes scripts that are not relevant to package consumers (based on the selected [profile](#profiles)).
 4. **Removes junk files** - Deletes OS and editor artifacts (`.DS_Store`, `*.orig`, `.*.swp`, `._*`, etc.) from the package directory.
 5. **Optimizes the `files` array** - Collapses individual file entries into their parent directory when all files in that directory are already listed, and removes entries that npm always includes automatically (`package.json`, `README`, `LICENSE`).
-6. **Cleans up unlisted files** - Removes files and directories not covered by the `files` array, then drops the `files` field itself (since only the included files remain on disk).
+6. **Cleans up excluded files** - Applies the `files` array and package-local ignore files, then removes files outside the resolved publish selection. The `files` field is retained when needed to preserve ignore rules and explicit inclusions.
 
 Additional optional features can be enabled via flags:
 
@@ -69,7 +69,7 @@ Additional optional features can be enabled via flags:
 | `--remove-sourcemaps` | `boolean`           | `false`   | Delete `.map` files and strip `sourceMappingURL` comments from source files.                                                                                           |
 | `--strip-comments`    | `string \| boolean` | `false`   | Strip comments from JS files. Pass without a value to strip JSDoc and regular comments, or provide comma-separated types: `jsdoc`, `license`, `regular`, `annotation`. |
 | `--optimize-files`    | `boolean`           | `true`    | Optimize the `files` array by collapsing entries.                                                                                                                      |
-| `--cleanup-files`     | `boolean`           | `true`    | Remove files not listed in the `files` array.                                                                                                                          |
+| `--cleanup-files`     | `boolean`           | `true`    | Remove files excluded by the `files` array or package-local ignore rules.                                                                                              |
 | `--version`           |                     |           | Show version number.                                                                                                                                                   |
 | `--help`              |                     |           | Show help message.                                                                                                                                                     |
 
@@ -246,6 +246,14 @@ await prunePkg(
 - **`logger`** - A logger instance (from [`@niceties/logger`](https://www.npmjs.com/package/@niceties/logger)).
 
 ## Ignored Files
+
+`pkgprn` reads `.npmignore` files in the current package and its subdirectories. When a directory has no `.npmignore`, its `.gitignore` is used instead. An empty `.npmignore` still takes precedence over `.gitignore`. Rules support negation, anchored paths, and directory patterns using npm's ignore matcher.
+
+An explicit `files` array overrides ignore files at the package root. Nested ignore files still apply inside included directories. Explicit file entries retain npm's override behavior. Always-included package metadata, documentation, and entry points are preserved.
+
+Publish selection is resolved before files are changed. With cleanup enabled, excluded files and unused ignore files are removed. With `--no-cleanup-files`, excluded files and ignore files remain on disk; excluded files are omitted from flattening, comment stripping, and sourcemap removal. Flattening moves the selected files without relocating ignore rules. A concrete `files` whitelist is retained when needed to preserve the resolved selection after these transformations.
+
+For example, `files: ["dist/**/*.js"]` together with `dist/.npmignore` containing `private.js` keeps `dist/public.js` in the package and excludes `dist/private.js`.
 
 `pkgprn` automatically removes files that npm itself always ignores:
 
