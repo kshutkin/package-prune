@@ -364,6 +364,9 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust) {
 
     for (const [distDir, info] of distDirInfo) {
         for (const file of info.files) {
+            if (!skipSourcemapAdjust && file.endsWith('.map') && (await lstat(file)).isSymbolicLink()) {
+                throw new Error(`cannot rebase a symlink sourcemap: ${file}`);
+            }
             const relativePath = path.relative(info.relativeDistDir, file);
 
             // check for cross-directory conflicts

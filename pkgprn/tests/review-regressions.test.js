@@ -28,6 +28,30 @@ for (const operation of ['cleanup', 'comments', 'maps', 'flatten']) {
     });
 }
 
+test('flatten rejects symlink sourcemaps before moving files or modifying external targets', async t => {
+    const external = await mkdtemp(path.join(tmpdir(), 'pkgprn-external-map-'));
+    t.after(() => rm(external, { recursive: true, force: true }));
+    const target = path.join(external, 'debug.map');
+    const original = JSON.stringify({ version: 3, sources: ['source.ts'], names: [], mappings: '' });
+    await writeFile(target, original);
+    const fixture = await packageFixture(
+        t,
+        { main: './dist/index.js' },
+        {
+            'dist/index.js': 'export {};',
+            'dist/other.js': 'original',
+        }
+    );
+    await symlink(target, path.join(fixture.cwd, 'dist/index.js.map'));
+    const pkg = await fixture.read('package.json');
+    await assert.rejects(fixture.run('--flatten'), error => /cannot rebase a symlink sourcemap/.test(error.stdout));
+    assert.equal(await readFile(target, 'utf8'), original);
+    assert.equal(await fixture.read('dist/index.js'), 'export {};');
+    assert.equal(await fixture.read('dist/other.js'), 'original');
+    assert.equal(await fixture.read('package.json'), pkg);
+    await assert.rejects(fixture.read('index.js'), { code: 'ENOENT' });
+});
+
 for (const files of [
     ['dist/**/*.js'],
     ['dist', '!dist/*.map', 'dist/keep.map'],
