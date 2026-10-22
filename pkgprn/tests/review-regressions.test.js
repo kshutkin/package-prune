@@ -68,6 +68,27 @@ for (const files of [[], ['README.md'], ['missing/**/*.js']]) {
     });
 }
 
+for (const cleanup of [true, false]) {
+    test(`root-directory whitelist preserves npm contents with cleanup=${cleanup}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { name: 'fixture', version: '1.0.0', files: ['./'] },
+            {
+                'dist/index.js': 'export {};',
+                'dist/private.js': 'private',
+                'dist/.npmignore': 'private.js\n',
+                'root-private.js': 'explicitly included',
+                '.npmignore': 'root-private.js\n',
+            }
+        );
+        const before = await fixture.pack();
+        await fixture.run(...(cleanup ? [] : ['--no-cleanup-files']));
+        assert.deepEqual(await fixture.pack(), before);
+        assert.ok((await fixture.pkg()).files.includes('./'));
+        assert.equal(await fixture.read('dist/index.js'), 'export {};');
+    });
+}
+
 test('flatten preserves package-local private imports and external targets', async t => {
     const fixture = await packageFixture(
         t,

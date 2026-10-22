@@ -273,7 +273,7 @@ export async function prunePkg(pkg, options, logger) {
         pkg.files = pkg.files.filter(dir => !ignoreDirs.includes(dir));
     }
 
-    if (options.cleanupFiles) {
+    if (options.cleanupFiles && !pkg.files?.includes('./')) {
         pkg.files = undefined;
     }
 }
@@ -833,6 +833,9 @@ async function expandFileGlobs(files) {
  */
 async function cleanupDir(pkg, logger) {
     logger.update('cleaning up files...');
+
+    // npm's explicit root entry includes everything and overrides root ignore rules.
+    if (pkg.files?.includes('./')) return;
 
     const alwaysIncludedFiles = getAlwaysIncludedFiles(pkg);
     const filesEntries = [.../** @type {string[]} */ (pkg.files).map(normalizePath), ...alwaysIncludedFiles];
