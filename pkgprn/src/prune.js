@@ -122,17 +122,16 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (options.removeSourcemaps) {
-        const sourceMaps = await walkDir('.', ['node_modules', '.git'], false).then(files => files.filter(file => file.endsWith('.map')));
-        for (const sourceMap of sourceMaps) {
-            // find corresponding file
-            const sourceFile = sourceMap.slice(0, -4);
-            if ((await isExists(sourceFile)) && !(await lstat(sourceFile)).isSymbolicLink()) {
-                const content = await readFile(sourceFile, 'utf8');
-                await writeFile(sourceFile, removeSourceMappingComments(content, sourceFile), 'utf8');
-            }
-            // remove sourceMap
-            await rm(sourceMap);
+        const allFiles = await walkDir('.', ['node_modules', '.git'], false);
+        const sourceMaps = allFiles.filter(file => file.endsWith('.map'));
+        const companions = new Set(sourceMaps.map(file => file.slice(0, -4)));
+        for (const file of allFiles) {
+            if (!/\.(?:[cm]?[jt]sx?|css)$/.test(file) && !companions.has(file)) continue;
+            const content = await readFile(file, 'utf8');
+            const stripped = removeSourceMappingComments(content, file);
+            if (stripped !== content) await writeFile(file, stripped, 'utf8');
         }
+        for (const sourceMap of sourceMaps) await rm(sourceMap);
         // remove deleted .map files from pkg.files (e.g. after flatten added them individually)
         if (pkg.files && sourceMaps.length > 0) {
             const removedMaps = new Set(sourceMaps.map(f => normalizePath(path.relative('.', f))));

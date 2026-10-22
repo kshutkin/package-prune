@@ -8,6 +8,31 @@ import { packageFixture } from './package-fixture.js';
 
 const regular = new Set(['regular']);
 
+for (const extension of ['js', 'mjs', 'cjs', 'css', 'd.ts', 'd.mts', 'd.cts']) {
+    for (const target of ['debug.map', 'maps/debug.map', '../maps/debug.map', 'missing.map', 'data:application/json;base64,e30=']) {
+        test(`sourcemap removal finds ${target} in ${extension} files`, async t => {
+            const css = extension === 'css';
+            const original = css ? 'body{}' : 'const x = 1;';
+            const directive = css ? `/*# sourceMappingURL=${target} */` : `//# sourceMappingURL=${target}`;
+            const fixture = await packageFixture(
+                t,
+                {},
+                {
+                    [`dist/index.${extension}`]: `${original}\n${directive}`,
+                    'dist/debug.map': '{}',
+                    'dist/maps/debug.map': '{}',
+                    'maps/debug.map': '{}',
+                }
+            );
+            await fixture.run('--remove-sourcemaps');
+            assert.equal(await fixture.read(`dist/index.${extension}`), original);
+            for (const map of ['dist/debug.map', 'dist/maps/debug.map', 'maps/debug.map']) {
+                await assert.rejects(fixture.read(map), { code: 'ENOENT' });
+            }
+        });
+    }
+}
+
 test('position mapping follows removed lines and inline comment columns', () => {
     const line = 'const answer = /* docs */ 42;';
     const source = `// heading\n${line}\n`;
