@@ -6,6 +6,33 @@ import test from 'node:test';
 
 import { packageFixture } from './package-fixture.js';
 
+for (const optimize of [true, false]) {
+    for (const flatten of [true, false]) {
+        test(`resolved literal filenames survive serialization with flatten=${flatten}, optimize=${optimize}`, async t => {
+            const fixture = await packageFixture(
+                t,
+                { name: 'fixture', version: '1.0.0', main: 'dist/index.js', files: flatten ? ['dist'] : ['dist/**/*.js'] },
+                {
+                    'dist/index.js': 'export {};',
+                    'dist/[name].js': 'brackets',
+                    'dist/n.js': 'plain',
+                    'dist/!keep.js': 'bang',
+                    'dist/{literal}.js': 'braces',
+                    'dist/[directory]/file.js': 'nested brackets',
+                    'dist/private.txt': 'private',
+                }
+            );
+            const before = await fixture.pack();
+            const args = ['--no-cleanup-files', ...(optimize ? [] : ['--no-optimize-files'])];
+            await fixture.run(...args, ...(flatten ? ['--flatten=dist'] : []));
+            const expected = before.map(file => (flatten ? file.replace(/^dist\//, '') : file)).sort();
+            assert.deepEqual(await fixture.pack(), expected);
+            await fixture.run(...args);
+            assert.deepEqual(await fixture.pack(), expected);
+        });
+    }
+}
+
 for (const cleanup of [true, false]) {
     for (const ignored of [true, false]) {
         test(`directories.bin preserves npm commands with cleanup=${cleanup}, ignores=${ignored}`, async t => {

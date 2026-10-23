@@ -294,9 +294,20 @@ export async function prunePkg(pkg, options, logger) {
     if (options.cleanupFiles && !preserveFiles) {
         pkg.files = undefined;
     }
-    if (publishFiles && pkg.files) {
+    if (pkg.files) {
         pkg.files = [
-            ...new Set(pkg.files.map(file => (file === './' ? file : `./${escapeGlob(normalizePath(file).split(path.sep).join('/'))}`))),
+            ...new Set(
+                await Promise.all(
+                    pkg.files.map(async file => {
+                        if (file === './') return file;
+                        const literal = (publishFiles ? normalizePath(file) : file).split(path.sep).join('/');
+                        let escaped = escapeGlob(literal);
+                        // npm cannot stat escaped directories to infer their recursive contents.
+                        if (escaped !== literal && (await isDirectory(file))) escaped += '/**';
+                        return publishFiles || file.startsWith('!') ? `./${escaped}` : escaped;
+                    })
+                )
+            ),
         ];
     }
 }
