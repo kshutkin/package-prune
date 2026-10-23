@@ -6,6 +6,22 @@ import test from 'node:test';
 
 import { packageFixture } from './package-fixture.js';
 
+for (const flatten of ['--flatten', '--flatten=dist']) {
+    for (const main of [undefined, 'dist/index.js']) {
+        test(`flatten rewrites the style entry with ${flatten}, main=${main}`, async t => {
+            const fixture = await packageFixture(
+                t,
+                { name: 'fixture', version: '1.0.0', main, style: './dist/theme.css', files: ['dist'] },
+                { 'dist/theme.css': ':root { color: red; }', ...(main ? { 'dist/index.js': 'export {};' } : {}) }
+            );
+            await fixture.run(flatten);
+            assert.equal((await fixture.pkg()).style, './theme.css');
+            assert.equal(await fixture.read((await fixture.pkg()).style), ':root { color: red; }');
+            if (main) assert.equal((await fixture.pkg()).main, 'index.js');
+        });
+    }
+}
+
 for (const [name, exports] of [
     ['direct', { './feature': './feature/package.json' }],
     ['conditional', { './feature': { default: './feature/package.json' } }],

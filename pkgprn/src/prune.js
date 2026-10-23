@@ -43,6 +43,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {Object.<string, string>} [devDependencies]
  * @property {string} [packageManager]
  * @property {string} [main]
+ * @property {string} [style]
  * @property {string|Record<string, string|false>} [browser]
  * @property {string|Object.<string, string>} [bin]
  * @property {Array<string>} [files]

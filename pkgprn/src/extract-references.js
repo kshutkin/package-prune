@@ -22,8 +22,8 @@ export function extractReferences(pkg) {
         }
     }
 
-    // simple top-level fields: main, module, unpkg, umd, types, typings
-    const topLevelFields = ['main', 'module', 'unpkg', 'umd', 'types', 'typings'];
+    // simple top-level fields: main, module, style, unpkg, umd, types, typings
+    const topLevelFields = ['main', 'module', 'style', 'unpkg', 'umd', 'types', 'typings'];
     for (const field of topLevelFields) {
         if (pkg[field] !== undefined && pkg[field] !== null) {
             result.push(pkg[field]);

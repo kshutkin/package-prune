@@ -29,6 +29,10 @@ describe('extractReferences', () => {
         assert.deepStrictEqual(result, ['./dist/index.mjs']);
     });
 
+    test('extracts style', () => {
+        assert.deepStrictEqual(extractReferences({ style: './dist/theme.css' }), ['./dist/theme.css']);
+    });
+
     test('extracts unpkg', () => {
         const result = extractReferences({ unpkg: './dist/index.umd.js' });
         assert.deepStrictEqual(result, ['./dist/index.umd.js']);
