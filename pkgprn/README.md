@@ -4,6 +4,8 @@ Prune `package.json` before publishing to npm. Removes `devDependencies`, strips
 
 ## Installation
 
+Requires Node.js 22.22.2 or later on 22.x, 24.15.0 or later on 24.x, or Node.js 26+.
+
 ```sh
 npm install -D pkgprn
 ```

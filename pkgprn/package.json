@@ -5,6 +5,9 @@
     "author": "Konstantin Shutkin",
     "bin": "./src/index.js",
     "type": "module",
+    "engines": {
+        "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+    },
     "types": "./types/index.d.ts",
     "exports": {
         ".": {
@@ -41,16 +44,16 @@
         "src"
     ],
     "dependencies": {
-        "@jridgewell/sourcemap-codec": "^1.5.5",
-        "@niceties/logger": "^2.1.0",
-        "@niceties/node-parseargs-plus": "^0.5.0",
-        "ignore-walk": "^8.0.0",
+        "@jridgewell/sourcemap-codec": "^1.6.0",
+        "@niceties/logger": "^2.1.1",
+        "@niceties/node-parseargs-plus": "^0.6.0",
+        "ignore-walk": "^9.0.0",
         "minimatch": "^10.2.6"
     },
     "devDependencies": {
         "@types/ignore-walk": "^4.0.3",
-        "c8": "^11.0.0",
+        "c8": "^12.0.0",
         "cli-test-helper": "^0.1.2",
-        "dts-buddy": "^0.7.0"
+        "dts-buddy": "^0.8.3"
     }
 }
