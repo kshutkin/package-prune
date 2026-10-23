@@ -7,6 +7,27 @@ import { stripComments } from '../src/strip-comments.js';
 
 const regular = new Set(['regular']);
 
+for (const source of [
+    'label: {} /[/*]/.test("*");',
+    'outer: inner: {} /[/*]/.test("*");',
+    'label /* comment */: {} /[/*]/.test("*");',
+    'switch(1) { case 1: {} /[/*]/.test("*"); }',
+    'switch(1) { default: {} /[/*]/.test("*"); }',
+    'switch(1) { case true ? 1 : 2: {} /[/*]/.test("*"); }',
+    'switch(1) { case ({value: 1}).value: {} /[/*]/.test("*"); }',
+    'switch(1) { case 1: switch(2) { case 2: {} /[/*]/.test("*"); } /[/*]/.test("*"); }',
+    'switch(1) { case (null ?? 1): {} /[/*]/.test("*"); }',
+    'switch(1) { case ({value: 1})?.value: {} /[/*]/.test("*"); }',
+    'const n = true ? 1 : {} / 2; /[/*]/.test("*");',
+    'const n = {value: {} / 2}; /[/*]/.test("*");',
+    'const n = {case: {} / 2, default: {} / 2}; /[/*]/.test("*");',
+    'const f = function(){ label: {} return /[/*]/.test("*"); }; f();',
+]) {
+    test(`statement and expression colons survive stripping: ${source}`, () => {
+        assert.equal(vm.runInNewContext(stripComments(source, regular)), vm.runInNewContext(source));
+    });
+}
+
 for (const quote of ["'", '"']) {
     for (const separator of ['\u2028', '\u2029', '\\\n', '\\\r', '\\\r\n', '\\\u2028', '\\\u2029']) {
         const source = `const s = ${quote}a${separator}//b/* c */${quote}; s; // remove`;

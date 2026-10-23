@@ -132,6 +132,7 @@ export function scanComments(source, literals = []) {
     let propertyAccess = false;
     let lastToken = '';
     let statementStart = true;
+    let labelCandidate = false;
     let lineBreakKeyword = '';
     /** @type {boolean[]} */
     const objectBraces = [];
@@ -139,6 +140,10 @@ export function scanComments(source, literals = []) {
     const parens = [];
     /** @type {{keyword: string, expression: boolean, parens: number, braces: number}[]} */
     const bodies = [];
+    /** @type {number[]} */
+    const switchBraces = [];
+    /** @type {{statement: boolean, parens: number, braces: number}[]} */
+    const colons = [];
 
     function lineBreak() {
         if (lineBreakKeyword) {
@@ -188,6 +193,9 @@ export function scanComments(source, literals = []) {
             // exprEnd unchanged
             continue;
         }
+
+        const labelColon = labelCandidate && ch === 0x3a;
+        labelCandidate = false;
 
         // Only break/continue can carry a label before their terminating line break.
         if (!isIdentStart(ch) && !isDigit(ch)) lineBreakKeyword = '';
@@ -239,6 +247,7 @@ export function scanComments(source, literals = []) {
                 templateStack[templateStack.length - 1] = depth - 1;
             }
             i++;
+            if (switchBraces.at(-1) === objectBraces.length) switchBraces.pop();
             // An object expression can end before division; a statement block cannot.
             exprEnd = objectBraces.pop() ?? false;
             statementStart = !exprEnd;
@@ -258,6 +267,8 @@ export function scanComments(source, literals = []) {
             const expression = startsBody ? body.expression : arrow || (!statementStart && !exprEnd);
             if (startsBody) bodies.pop();
             objectBraces.push(expression);
+            if (controlParen === 'switch') switchBraces.push(objectBraces.length);
+            controlParen = null;
             statementStart = !!startsBody || arrow || !expression;
             lastToken = '{';
             if (templateStack.length > 0) {
@@ -270,10 +281,14 @@ export function scanComments(source, literals = []) {
 
         // ---- identifier / keyword / number --------------------------------
         if (isIdentStart(ch) || isDigit(ch)) {
+            labelCandidate = statementStart && isIdentStart(ch) && !propertyAccess;
             const wordStart = i;
             i++;
             while (i < len && isIdentPart(source.charCodeAt(i))) i++;
             const word = source.slice(wordStart, i);
+            if (!propertyAccess && switchBraces.at(-1) === objectBraces.length && (word === 'case' || word === 'default')) {
+                colons.push({ statement: true, parens: parens.length, braces: objectBraces.length });
+            }
             const paren = parens.at(-1);
             const forOf =
                 !propertyAccess &&
@@ -322,7 +337,9 @@ export function scanComments(source, literals = []) {
 
         // A control condition ends before a statement, which may start with a regex.
         if (ch === 0x29 /* ) */ || ch === 0x5d /* ] */) {
-            exprEnd = ch === 0x5d || !parens.pop()?.control;
+            const control = ch === 0x29 ? parens.pop()?.control : null;
+            controlParen = control === 'switch' ? control : null;
+            exprEnd = ch === 0x5d || !control;
             statementStart = !exprEnd;
             lastToken = source[i];
             i++;
@@ -334,10 +351,17 @@ export function scanComments(source, literals = []) {
         propertyAccess = ch === 0x2e /* . */;
         // A reserved word followed by ':' was a property name, not a body header.
         if (ch === 0x3a && bodies.at(-1)?.keyword === lastToken) bodies.pop();
+        if (ch === 0x3f && !['?', '.'].includes(source[i + 1]) && source[i - 1] !== '?') {
+            colons.push({ statement: false, parens: parens.length, braces: objectBraces.length });
+        }
+        const colon = colons.at(-1);
+        const matchedColon =
+            ch === 0x3a && colon?.parens === parens.length && colon.braces === objectBraces.length ? colons.pop() : undefined;
+        const statementColon = ch === 0x3a && (labelColon || matchedColon?.statement);
         const paren = parens.at(-1);
         const header = paren?.braces === objectBraces.length && paren.control;
         if (ch === 0x3b && header) paren.forBinding = false;
-        statementStart = ch === 0x3b /* ; */ && !header;
+        statementStart = !!statementColon || (ch === 0x3b /* ; */ && !header);
         lastToken = source.startsWith('=>', i) ? '=>' : source[i];
         if (lastToken === '=>') i++;
         i++;
