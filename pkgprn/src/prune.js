@@ -94,7 +94,10 @@ export async function prunePkg(pkg, options, logger) {
         }
     }
 
-    const explicitFiles = [...(pkg.files ?? []).map(file => (file === './' ? file : normalizePath(file))), ...getAlwaysIncludedFiles(pkg)];
+    const explicitFiles = [
+        ...(pkg.files ?? []).map(file => (file === './' ? file : normalizePath(file))),
+        ...(await getAlwaysIncludedFiles(pkg)),
+    ];
     const inventory = await walkDir('.', ['node_modules', '.git'], false);
     const hasIgnoreFiles = inventory.some(file => ['.npmignore', '.gitignore'].includes(path.basename(file)));
     const rootWhitelist = pkg.files?.length === 1 && pkg.files[0] === './' ? pkg.files : undefined;
@@ -203,7 +206,9 @@ export async function prunePkg(pkg, options, logger) {
 
     if (pkg.files && Array.isArray(pkg.files) && options.optimizeFiles && !options.cleanupFiles) {
         // npm does not implicitly include main when it starts with './'.
-        const filterFiles = getAlwaysIncludedFiles(pkg).filter(file => !pkg.main?.startsWith('./') || file !== normalizePath(pkg.main));
+        const filterFiles = (await getAlwaysIncludedFiles(pkg)).filter(
+            file => !pkg.main?.startsWith('./') || file !== normalizePath(pkg.main)
+        );
 
         const depthToFiles = new Map();
 
@@ -773,9 +778,9 @@ async function isExists(file) {
  * Returns the list of files always included by npm for a given package.
  * This includes `package.json`, the `main` entry, and all `bin` entries.
  * @param {PackageJson} pkg
- * @returns {string[]}
+ * @returns {Promise<string[]>}
  */
-function getAlwaysIncludedFiles(pkg) {
+async function getAlwaysIncludedFiles(pkg) {
     const files = [...alwaysIncludedExact];
     if (pkg.main && typeof pkg.main === 'string') {
         files.push(normalizePath(pkg.main));
@@ -786,6 +791,20 @@ function getAlwaysIncludedFiles(pkg) {
         }
         if (typeof pkg.bin === 'object' && pkg.bin !== null) {
             files.push(...Object.values(pkg.bin).map(normalizePath));
+        }
+    } else if (typeof pkg.directories?.bin === 'string') {
+        const binDir = normalizePath(pkg.directories.bin);
+        if (isSubDirectory('.', binDir) && (await isDirectory(binDir)) && isSubDirectory(await realpath('.'), await realpath(binDir))) {
+            const binFiles = await walkDir(binDir, ['node_modules', '.git'], false);
+            files.push(
+                ...binFiles.filter(
+                    file =>
+                        !path
+                            .relative(binDir, file)
+                            .split(path.sep)
+                            .some(part => part.startsWith('.'))
+                )
+            );
         }
     }
     return files;
@@ -885,7 +904,7 @@ async function cleanupDir(pkg, logger) {
     // npm's explicit root entry includes everything and overrides root ignore rules.
     if (pkg.files?.includes('./')) return;
 
-    const alwaysIncludedFiles = getAlwaysIncludedFiles(pkg);
+    const alwaysIncludedFiles = await getAlwaysIncludedFiles(pkg);
     const filesEntries = [.../** @type {string[]} */ (pkg.files).map(normalizePath), ...alwaysIncludedFiles];
 
     const entries = await readdir('.');

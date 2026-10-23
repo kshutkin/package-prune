@@ -6,6 +6,41 @@ import test from 'node:test';
 
 import { packageFixture } from './package-fixture.js';
 
+for (const cleanup of [true, false]) {
+    for (const ignored of [true, false]) {
+        test(`directories.bin preserves npm commands with cleanup=${cleanup}, ignores=${ignored}`, async t => {
+            const fixture = await packageFixture(
+                t,
+                { name: 'fixture', version: '1.0.0', directories: { bin: 'tools' }, files: ignored ? undefined : [] },
+                {
+                    'tools/cli.js': 'console.log(42);',
+                    'tools/nested/other.js': 'console.log(43);',
+                    'tools/.private.js': 'private',
+                    'tools/.hidden/private.js': 'private',
+                    ...(ignored ? { '.npmignore': '*\n' } : {}),
+                }
+            );
+            const before = await fixture.pack();
+            await fixture.run(...(cleanup ? [] : ['--no-cleanup-files']));
+            assert.deepEqual(await fixture.pack(), before);
+            assert.equal(await fixture.read('tools/cli.js'), 'console.log(42);');
+            assert.equal(await fixture.read('tools/nested/other.js'), 'console.log(43);');
+        });
+    }
+}
+
+test('an explicit bin takes precedence over directories.bin during cleanup', async t => {
+    const fixture = await packageFixture(
+        t,
+        { name: 'fixture', version: '1.0.0', bin: { fixture: 'cli.js' }, directories: { bin: 'tools' }, files: [] },
+        { 'cli.js': 'console.log(42);', 'tools/private.js': 'private' }
+    );
+    const before = await fixture.pack();
+    await fixture.run();
+    assert.deepEqual(await fixture.pack(), before);
+    await assert.rejects(fixture.read('tools/private.js'), { code: 'ENOENT' });
+});
+
 for (const operation of ['cleanup', 'comments', 'maps', 'flatten']) {
     test(`${operation} leaves external symlink targets untouched`, async t => {
         const external = await mkdtemp(path.join(tmpdir(), 'pkgprn-external-'));
