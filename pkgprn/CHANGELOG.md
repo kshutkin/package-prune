@@ -1,5 +1,16 @@
 # pkgprn
 
+## 0.9.1
+
+### Patch Changes
+
+- 1536775: Escape literal publish paths after glob expansion and flattening even when no ignore files are present, preserving filenames containing glob characters or leading exclamation marks with cleanup disabled.
+- 899b748: Recognize the `style` entry point during automatic flatten detection and rewrite it when CSS files move, including packages with no JavaScript entry point.
+- f316755: Preserve commands declared through `directories.bin` during publish selection and cleanup, while respecting explicit `bin` entries and excluding hidden files and symlinks.
+- 60decd1: Keep package metadata targeted by package references or export patterns when removing unused export-map stubs after flattening.
+- 7102001: Preserve regular expressions following labeled and switch-case blocks during comment stripping by distinguishing statement colons from object properties and conditional expressions.
+- e1f21e6: Consume Unicode escapes as part of identifier tokens so comment stripping preserves division, regular expressions, and labels after identifiers containing braced code point escapes.
+
 ## 0.9.0
 
 ### Minor Changes
