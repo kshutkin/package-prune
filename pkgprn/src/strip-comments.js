@@ -283,8 +283,10 @@ export function scanComments(source, literals = []) {
         if (isIdentStart(ch) || isDigit(ch)) {
             labelCandidate = statementStart && isIdentStart(ch) && !propertyAccess;
             const wordStart = i;
-            i++;
-            while (i < len && isIdentPart(source.charCodeAt(i))) i++;
+            while (i < len && isIdentPart(source.charCodeAt(i))) {
+                const unicodeEscape = source[i] === '\\' ? /^\\u(?:\{[\da-f]+\}|[\da-f]{4})/i.exec(source.slice(i)) : null;
+                i += unicodeEscape?.[0].length ?? 1;
+            }
             const word = source.slice(wordStart, i);
             if (!propertyAccess && switchBraces.at(-1) === objectBraces.length && (word === 'case' || word === 'default')) {
                 colons.push({ statement: true, parens: parens.length, braces: objectBraces.length });
