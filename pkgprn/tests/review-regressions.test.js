@@ -6,6 +6,34 @@ import test from 'node:test';
 
 import { packageFixture } from './package-fixture.js';
 
+for (const [name, exports] of [
+    ['direct', { './feature': './feature/package.json' }],
+    ['conditional', { './feature': { default: './feature/package.json' } }],
+    ['wildcard', { './feature': './dist/index.js', './metadata/*': './feature/*.json' }],
+]) {
+    test(`flatten preserves metadata referenced by ${name} exports`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { name: 'fixture', version: '1.0.0', main: 'dist/index.js', files: ['dist', 'feature'], exports },
+            { 'dist/index.js': 'export {};', 'feature/package.json': '{"type":"module"}' }
+        );
+        await fixture.run('--flatten=dist');
+        assert.deepEqual(await fixture.pack(), ['feature/package.json', 'index.js', 'package.json']);
+        assert.equal(await fixture.read('feature/package.json'), '{"type":"module"}');
+    });
+}
+
+test('flatten still removes unused export-map metadata stubs', async t => {
+    const fixture = await packageFixture(
+        t,
+        { name: 'fixture', version: '1.0.0', files: ['dist', 'feature'], exports: { './feature': './dist/index.js' } },
+        { 'dist/index.js': 'export {};', 'feature/package.json': '{"type":"module"}' }
+    );
+    await fixture.run('--flatten=dist');
+    assert.deepEqual(await fixture.pack(), ['index.js', 'package.json']);
+    await assert.rejects(fixture.read('feature/package.json'), { code: 'ENOENT' });
+});
+
 for (const optimize of [true, false]) {
     for (const flatten of [true, false]) {
         test(`resolved literal filenames survive serialization with flatten=${flatten}, optimize=${optimize}`, async t => {

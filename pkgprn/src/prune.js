@@ -576,6 +576,9 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) 
 
     // remove extra directories with package.json
     const exports = pkg.exports ? Object.keys(pkg.exports) : [];
+    const references = extractReferences(pkg)
+        .filter(reference => typeof reference === 'string')
+        .map(normalizePath);
     for (const key of exports) {
         if (!key.startsWith('./') || !isSubDirectory('.', key)) {
             continue;
@@ -587,7 +590,13 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) 
             // ensure nothing else is in the directory
             const files = await readdir(key);
             if (files.length === 1 && pkgExists) {
-                await rm(key, { recursive: true, force: true });
+                const referenced = references.some(
+                    reference =>
+                        reference === normalizePath(key) ||
+                        reference === pkgPath ||
+                        new Minimatch(reference, { dot: true, nonegate: true, nocomment: true }).match(pkgPath)
+                );
+                if (!referenced) await rm(key, { recursive: true, force: true });
             }
         }
     }
