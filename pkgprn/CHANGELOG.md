@@ -1,5 +1,12 @@
 # pkgprn
 
+## 0.9.0
+
+### Minor Changes
+
+- 568eeb0: Support package-local `.npmignore` files and `.gitignore` fallback with npm-compatible root and nested precedence, negations, and publish whitelist overrides. Resolve publish selection before cleanup and flattening so excluded files cannot leak through expanded globs or relocated ignore files. With cleanup disabled, preserve excluded files and leave them out of content transformations and flattening.
+- 4589d89: Update runtime dependencies and build tools to their latest releases. Align the supported Node.js versions with `ignore-walk@9`: Node.js 22.22.2+, 24.15.0+, or 26+ on the respective supported major lines.
+
 ## 0.8.4
 
 ### Patch Changes
