@@ -104,20 +104,26 @@ export async function prunePkg(pkg, options, logger) {
     const rootWhitelist = pkg.files?.length === 1 && pkg.files[0] === './' ? pkg.files : undefined;
     /** @type {Set<string> | undefined} */
     let publishFiles;
-    if (hasIgnoreFiles) {
+    // Without cleanup, flattening must leave unpublished files in place even
+    // when the whitelist is the only source of publish rules.
+    if (hasIgnoreFiles || (pkg.files && options.flatten && !options.cleanupFiles)) {
         const required = [
             ...explicitFiles,
             ...inventory.filter(file => isAlwaysIncludedByBasename(file) || (rootWhitelist && path.dirname(file) === '.')),
         ];
-        pkg.files = await filterNpmIgnore(inventory, {
+        const selectedFiles = await filterNpmIgnore(inventory, {
             files: pkg.files,
             required,
             hardIgnored,
             defaults: [...alwaysIgnored, ...alwaysIgnoredPatterns, '.npmignore', '.gitignore'],
         });
-        publishFiles = new Set(pkg.files);
-        explicitFiles.push(...pkg.files);
-    } else if (pkg.files && Array.isArray(pkg.files)) {
+        publishFiles = new Set(selectedFiles);
+        if (hasIgnoreFiles) {
+            pkg.files = selectedFiles;
+            explicitFiles.push(...selectedFiles);
+        }
+    }
+    if (!hasIgnoreFiles && pkg.files && Array.isArray(pkg.files)) {
         pkg.files = expandFileGlobs(pkg.files, inventory);
     }
 
@@ -291,7 +297,7 @@ export async function prunePkg(pkg, options, logger) {
 
     // Keep overrides that npm would otherwise replace with its default ignore rules.
     const preserveFiles =
-        publishFiles || pkg.files?.some(file => file === './' || normalizePath(file).split(path.sep).some(isAlwaysIgnored));
+        hasIgnoreFiles || pkg.files?.some(file => file === './' || normalizePath(file).split(path.sep).some(isAlwaysIgnored));
     if (options.cleanupFiles && !preserveFiles) {
         pkg.files = undefined;
     }
@@ -301,11 +307,11 @@ export async function prunePkg(pkg, options, logger) {
                 await Promise.all(
                     pkg.files.map(async file => {
                         if (file === './') return file;
-                        const literal = (publishFiles ? normalizePath(file) : file).split(path.sep).join('/');
+                        const literal = (hasIgnoreFiles ? normalizePath(file) : file).split(path.sep).join('/');
                         let escaped = escapeGlob(literal);
                         // npm cannot stat escaped directories to infer their recursive contents.
                         if (escaped !== literal && (await isDirectory(file))) escaped += '/**';
-                        return publishFiles || file.startsWith('!') ? `./${escaped}` : escaped;
+                        return hasIgnoreFiles || file.startsWith('!') ? `./${escaped}` : escaped;
                     })
                 )
             ),
@@ -319,7 +325,7 @@ export async function prunePkg(pkg, options, logger) {
  * @param {true|string[]} flatten
  * @param {Logger} logger
  * @param {boolean} [skipSourcemapAdjust] - skip sourcemap adjustment (e.g. when sourcemaps will be removed)
- * @param {Set<string>} [publishFiles] - Frozen selection when ignore files are present.
+ * @param {Set<string>} [publishFiles] - Resolved publish selection, updated as files move.
  */
 async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) {
     // find out where is the dist folder

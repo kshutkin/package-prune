@@ -522,13 +522,13 @@
         },
         {
             "id": 55,
-            "name": "flatten with cleanup disabled fails on junk file conflict",
+            "name": "flatten with cleanup disabled leaves excluded junk conflicts untouched",
             "args": "--flatten --no-cleanup-files",
             "input": ".DS_Store\n|junk\ndist\n  .DS_Store\n|junk2\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
-            "output": ".DS_Store\n|junk\ndist\n  .DS_Store\n|junk2\n  index.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./dist/index.js\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
-            "stdout": "preparing..\n\nℹ cleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n✕ Error: dist folder cannot be flattened because files already exist: .DS_Store\n",
+            "output": ".DS_Store\n|junk\ndist\n  .DS_Store\n|junk2\nindex.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"main\": \"./index.js\",\n|  \"files\": [\n|    \"dist\",\n|    \"index.js\"\n|  ]\n|}\n|",
+            "stdout": "preparing..\n\nℹ cleanup is disabled, junk files may cause flatten to fail\nflattening dist...\n",
             "stderr": "",
-            "exitCode": 255
+            "exitCode": 0
         },
         {
             "id": 56,

@@ -6,6 +6,33 @@ import test from 'node:test';
 
 import { packageFixture } from './package-fixture.js';
 
+for (const files of [['dist/public.js'], ['dist/public*.js'], ['dist', '!dist/private*'], []]) {
+    for (const flatten of ['--flatten', '--flatten=dist']) {
+        for (const optimize of [true, false]) {
+            test(`flatten respects ${JSON.stringify(files)} without ignore files, ${flatten}, optimize=${optimize}`, async t => {
+                const fixture = await packageFixture(
+                    t,
+                    { name: 'fixture', version: '1.0.0', main: 'dist/public.js', files },
+                    {
+                        'dist/public.js': 'console.log(42);',
+                        'dist/private.key': 'secret',
+                        'dist/private.js': '// private comment\nconsole.log(43);',
+                    }
+                );
+                assert.deepEqual(await fixture.pack(), ['dist/public.js', 'package.json']);
+                await fixture.run(flatten, '--no-cleanup-files', ...(optimize ? [] : ['--no-optimize-files']));
+                assert.deepEqual(await fixture.pack(), ['package.json', 'public.js']);
+                assert.equal((await fixture.pkg()).main, 'public.js');
+                assert.equal(await fixture.read('public.js'), 'console.log(42);');
+                assert.equal(await fixture.read('dist/private.key'), 'secret');
+                assert.equal(await fixture.read('dist/private.js'), '// private comment\nconsole.log(43);');
+                await assert.rejects(fixture.read('private.key'), { code: 'ENOENT' });
+                await assert.rejects(fixture.read('private.js'), { code: 'ENOENT' });
+            });
+        }
+    }
+}
+
 for (const flatten of ['--flatten', '--flatten=dist']) {
     for (const main of [undefined, 'dist/index.js']) {
         test(`flatten rewrites the style entry with ${flatten}, main=${main}`, async t => {
