@@ -45,6 +45,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {string} [main]
  * @property {string} [style]
  * @property {string|Record<string, string|false>} [browser]
+ * @property {boolean|string[]} [sideEffects]
  * @property {string|Object.<string, string>} [bin]
  * @property {Array<string>} [files]
  * @property {Record<string, unknown>} [directories]
@@ -542,10 +543,7 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) 
     // update package.json - replace each distDir prefix in references
     const prefixes = distDirs.map(dir => `${dir}${path.sep}`);
     /** @param {string} value */
-    const updateReference = value => {
-        if (!allReferencesSet.has(value)) {
-            return value;
-        }
+    const updatePath = value => {
         const normalized = normalizePath(value);
         for (const prefix of prefixes) {
             if (normalized.startsWith(prefix)) {
@@ -554,9 +552,40 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) 
         }
         return value;
     };
+    /** @param {string} value */
+    const updateReference = value => (allReferencesSet.has(value) ? updatePath(value) : value);
     const browser = pkg.browser;
+    const sideEffects = pkg.sideEffects;
     const pkgClone = cloneAndUpdate(pkg, updateReference);
     Object.assign(pkg, pkgClone);
+    if (Array.isArray(sideEffects)) {
+        pkg.sideEffects = [
+            ...new Set(
+                sideEffects.flatMap(pattern => {
+                    const updated = updatePath(pattern);
+                    // Keep rewritten patterns anchored even when they lose their last slash.
+                    if (updated !== pattern) return [`./${normalizePath(updated).split(path.sep).join('/')}`];
+                    const relative = pattern.replace(/^(?:\.\/)+/, '');
+                    const matcher = new Minimatch(relative.includes('/') ? relative : `**/${relative}`, {
+                        dot: true,
+                        nonegate: true,
+                        nocomment: true,
+                    });
+                    const patterns = [pattern];
+                    // Broader patterns may still cover files outside the flattened roots.
+                    for (const [newPath, oldPath] of movedFiles) {
+                        if (
+                            matcher.match(normalizePath(oldPath).split(path.sep).join('/')) &&
+                            !matcher.match(newPath.split(path.sep).join('/'))
+                        ) {
+                            patterns.push(`./${escapeGlob(newPath.split(path.sep).join('/'), { windowsPathsNoEscape: true })}`);
+                        }
+                    }
+                    return patterns;
+                })
+            ),
+        ];
+    }
     if (browser && typeof browser === 'object') {
         pkg.browser = Object.fromEntries(
             Object.entries(browser).map(([key, value]) => [

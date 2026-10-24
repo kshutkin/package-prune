@@ -100,6 +100,8 @@ Keeps everything from the `library` profile, plus runtime and test lifecycle scr
 
 Flattening moves files from a dist directory (e.g. `dist/`) into the package root and updates all references in `package.json` (`main`, `module`, `exports`, `imports`, `bin`, `types`, `typesVersions`, etc.) accordingly.
 
+Paths and glob patterns in `sideEffects` are updated to preserve their coverage after files move. Global patterns and boolean declarations stay unchanged. During partial flattening, broader patterns are retained for unmoved files and entries are added for matching files that moved.
+
 ### Auto-detect
 
 When `--flatten` is passed without a value (or with `auto`), `pkgprn` inspects `main`, `bin`, `module`, `exports`, `types`, and other entry-point fields to find the longest common directory prefix, and flattens that:
