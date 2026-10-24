@@ -127,6 +127,43 @@ for (const cleanup of [true, false]) {
     }
 }
 
+for (const entries of [['hello.js'], ['hello.js', 'goodbye.mjs'], ['hello.js', 'nested/other.js']]) {
+    for (const cleanup of [true, false]) {
+        test(`flatten preserves directory command names for ${entries.join(', ')}, cleanup=${cleanup}`, async t => {
+            const source = '#!/usr/bin/env node\nconsole.log(42);';
+            const fixture = await packageFixture(
+                t,
+                { name: 'fixture', version: '1.0.0', directories: { bin: 'tools' }, files: ['tools'] },
+                Object.fromEntries([
+                    ...entries.map(file => [`tools/${file}`, source]),
+                    ['tools/.private.js', 'private'],
+                    ['tools/.hidden/private.js', 'private'],
+                    ['tools/.npmignore', '*\n'],
+                ])
+            );
+            await fixture.run('--flatten=tools', ...(cleanup ? [] : ['--no-cleanup-files']));
+            const pkg = await fixture.pkg();
+            assert.deepEqual(pkg.bin, Object.fromEntries(entries.map(file => [path.basename(file), file])));
+            assert.equal(pkg.directories, undefined);
+            assert.deepEqual(await fixture.pack(), [...entries, 'package.json'].sort());
+            for (const target of Object.values(pkg.bin)) assert.equal((await fixture.node(target)).stdout.trim(), '42');
+        });
+    }
+}
+
+for (const bin of ['cli.js', { custom: 'cli.js' }]) {
+    test(`flatten preserves an explicit bin alongside directories.bin: ${JSON.stringify(bin)}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { name: 'fixture', version: '1.0.0', bin, directories: { bin: 'tools', man: 'man' }, files: ['tools'] },
+            { 'cli.js': '#!/usr/bin/env node\nconsole.log(42);', 'tools/other.js': 'console.log(43);' }
+        );
+        await fixture.run('--flatten=tools');
+        assert.deepEqual((await fixture.pkg()).bin, bin);
+        assert.deepEqual((await fixture.pkg()).directories, { man: 'man' });
+    });
+}
+
 test('an explicit bin takes precedence over directories.bin during cleanup', async t => {
     const fixture = await packageFixture(
         t,

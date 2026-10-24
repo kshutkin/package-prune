@@ -457,18 +457,14 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) 
             typeof pkg.directories.bin === 'string' &&
             normalizePath(pkg.directories.bin) === distDir
         ) {
+            if (!pkg.bin) {
+                const files = await getDirectoryBinFiles(distDir);
+                pkg.bin = Object.fromEntries(files.map(file => [path.basename(file), file]));
+                allReferences.push(...files);
+            }
             delete pkg.directories.bin;
             if (Object.keys(pkg.directories).length === 0) {
                 pkg.directories = undefined;
-            }
-            const files = await readdir(distDir);
-            if (files.length === 1) {
-                pkg.bin = files[0];
-            } else {
-                pkg.bin = {};
-                for (const file of files) {
-                    pkg.bin[path.basename(file, path.extname(file))] = file;
-                }
             }
         }
     }
@@ -820,21 +816,29 @@ async function getAlwaysIncludedFiles(pkg) {
             files.push(...Object.values(pkg.bin).map(normalizePath));
         }
     } else if (typeof pkg.directories?.bin === 'string') {
-        const binDir = normalizePath(pkg.directories.bin);
-        if (isSubDirectory('.', binDir) && (await isDirectory(binDir)) && isSubDirectory(await realpath('.'), await realpath(binDir))) {
-            const binFiles = await walkDir(binDir, ['node_modules', '.git'], false);
-            files.push(
-                ...binFiles.filter(
-                    file =>
-                        !path
-                            .relative(binDir, file)
-                            .split(path.sep)
-                            .some(part => part.startsWith('.'))
-                )
-            );
-        }
+        files.push(...(await getDirectoryBinFiles(pkg.directories.bin)));
     }
     return files;
+}
+
+/**
+ * Discover executable paths declared by directories.bin without following symlinks.
+ * @param {string} dir
+ * @returns {Promise<string[]>}
+ */
+async function getDirectoryBinFiles(dir) {
+    const binDir = normalizePath(dir);
+    if (!isSubDirectory('.', binDir) || !(await isDirectory(binDir)) || !isSubDirectory(await realpath('.'), await realpath(binDir))) {
+        return [];
+    }
+    const files = await walkDir(binDir, ['node_modules', '.git'], false);
+    return files.filter(
+        file =>
+            !path
+                .relative(binDir, file)
+                .split(path.sep)
+                .some(part => part.startsWith('.'))
+    );
 }
 
 /**

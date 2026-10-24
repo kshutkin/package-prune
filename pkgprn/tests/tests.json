@@ -235,7 +235,7 @@
             "name": "flatten directories.bin (2 files)",
             "args": "--flatten=dist/bin",
             "input": "dist\n  bin\n    1.js\n|\n    2.js\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/bin\"\n|  },\n|  \"name\": \"mylib\",\n|  \"files\": [\n|    \"dist\"\n|  ]\n|}",
-            "output": "1.js\n|\n2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"bin\": {\n|    \"1\": \"1.js\",\n|    \"2\": \"2.js\"\n|  }\n|}\n|",
+            "output": "1.js\n|\n2.js\n|\npackage.json\n|{\n|  \"name\": \"mylib\",\n|  \"bin\": {\n|    \"1.js\": \"1.js\",\n|    \"2.js\": \"2.js\"\n|  }\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist/bin...\n",
             "stderr": "",
             "exitCode": 0
@@ -245,7 +245,7 @@
             "name": "flatten directories.bin (1 file + man)",
             "args": "--flatten=dist/bin",
             "input": "dist\n  bin\n    2.js\n|\nman\n  doc.txt\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"bin\": \"./dist/bin\",\n|    \"man\": \"./man\"\n|  },\n|  \"name\": \"mylib\",\n|  \"files\": [\n|    \"dist\",\n|    \"man\"\n|  ]\n|}",
-            "output": "2.js\n|\nman\n  doc.txt\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"man\": \"./man\"\n|  },\n|  \"name\": \"mylib\",\n|  \"bin\": \"2.js\"\n|}\n|",
+            "output": "2.js\n|\nman\n  doc.txt\n|\npackage.json\n|{\n|  \"directories\": {\n|    \"man\": \"./man\"\n|  },\n|  \"name\": \"mylib\",\n|  \"bin\": {\n|    \"2.js\": \"2.js\"\n|  }\n|}\n|",
             "stdout": "preparing..\n\ncleaning up files...\nflattening dist/bin...\n",
             "stderr": "",
             "exitCode": 0
