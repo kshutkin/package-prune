@@ -1,5 +1,24 @@
 # pkgprn-internal
 
+## 0.10.0
+
+### Minor Changes
+
+- 05c81f5: Preserve side-effect declarations when flattening packages by rewriting scoped `sideEffects` paths and glob patterns. Keep global patterns and boolean declarations unchanged, and retain coverage for both moved and unmoved files during partial flattening so consumer bundlers do not discard required registration code or styles.
+
+### Patch Changes
+
+- 1536775: Escape literal publish paths after glob expansion and flattening even when no ignore files are present, preserving filenames containing glob characters or leading exclamation marks with cleanup disabled.
+- 899b748: Recognize the `style` entry point during automatic flatten detection and rewrite it when CSS files move, including packages with no JavaScript entry point.
+- f316755: Preserve commands declared through `directories.bin` during publish selection and cleanup, while respecting explicit `bin` entries and excluding hidden files and symlinks.
+- 60decd1: Keep package metadata targeted by package references or export patterns when removing unused export-map stubs after flattening.
+- aff57f0: Preserve command names, filename extensions, and nested executable paths when flattening a `directories.bin` directory. Keep explicit `bin` mappings instead of replacing them, and reuse the same safe executable discovery as publish selection.
+- be742f1: Preserve JavaScript token boundaries and significant line breaks when removing sourcemap directives. Keep surrounding CSS selector whitespace intact so removing directives does not change runtime behavior or selector meaning.
+- 7102001: Preserve regular expressions following labeled and switch-case blocks during comment stripping by distinguishing statement colons from object properties and conditional expressions.
+- 8e210a9: Rebase sources in published sourcemaps that remain outside flattened directories when their source files move. Preserve unrelated maps unchanged and keep declaration-map position adjustments working when flattening and stripping comments together.
+- 1595629: Respect the publish whitelist when flattening with cleanup disabled, even without ignore files. Excluded files remain in their original locations and are not added to the published package.
+- e1f21e6: Consume Unicode escapes as part of identifier tokens so comment stripping preserves division, regular expressions, and labels after identifiers containing braced code point escapes.
+
 ## 0.9.0
 
 ### Minor Changes
