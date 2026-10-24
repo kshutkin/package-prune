@@ -503,7 +503,7 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) 
 
     await Promise.all(renamePromises);
 
-    // Sources outside the moved directories need rebasing for every flatten mode.
+    // Rebase moved maps and unmoved maps that reference moved sources.
     if (!skipSourcemapAdjust) {
         // build reverse map: normalized old path -> new path
         // so we can fix sources that point to files which themselves moved
@@ -513,12 +513,11 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) 
             oldToNew.set(path.normalize(oldPath), newPath);
         }
 
-        const sourcemapFiles = newFiles.filter(f => f.endsWith('.map'));
+        const sourcemapFiles = (await walkDir('.', ['node_modules', '.git'], false)).filter(
+            file => file.endsWith('.map') && (!publishFiles || publishFiles.has(file))
+        );
         for (const newMapPath of sourcemapFiles) {
-            const oldMapPath = movedFiles.get(newMapPath);
-            if (oldMapPath) {
-                await adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew);
-            }
+            await adjustSourcemapPaths(newMapPath, movedFiles.get(newMapPath) ?? newMapPath, oldToNew);
         }
     }
 
@@ -683,7 +682,7 @@ async function readSourcemap(file) {
 }
 
 /**
- * Adjusts the `sources` (and `sourceRoot`) in a v3 sourcemap file after it has been moved.
+ * Adjusts `sources` (and `sourceRoot`) in a v3 sourcemap when the map or a source moves.
  * Resolves each source against the old location, then makes it relative to the new location.
  * If a source target was itself moved during flatten, the new location is used instead.
  * @param {string} newMapPath - The new path of the .map file (relative to project root).
@@ -700,19 +699,23 @@ async function adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew) {
         return; // not valid JSON, skip
     }
 
-    if (map.version !== 3 || !Array.isArray(map.sources)) {
+    if (map?.version !== 3 || !Array.isArray(map.sources)) {
         return;
     }
 
     const newDir = path.dirname(newMapPath) || '.';
-    map.sources = map.sources.map((/** @type {string | null} */ source) => {
+    let changed = newMapPath !== oldMapPath;
+    const sources = map.sources.map((/** @type {string | null} */ source) => {
         const resolved = resolveSourceMapSource(source, map.sourceRoot, oldMapPath);
         if (resolved === null) return null;
         if (resolved.protocol !== 'file:') return resolved.href;
         const oldRelative = path.relative('.', fileURLToPath(resolved));
+        if (oldToNew.has(oldRelative)) changed = true;
         const effective = oldToNew.get(oldRelative) ?? oldRelative;
         return path.relative(newDir, effective).split(path.sep).map(encodeURIComponent).join('/');
     });
+    if (!changed) return;
+    map.sources = sources;
 
     // sourceRoot has been incorporated into the individual source paths
     if (map.sourceRoot !== undefined) {

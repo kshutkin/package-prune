@@ -8,6 +8,82 @@ import { packageFixture } from './package-fixture.js';
 
 const regular = new Set(['regular']);
 
+for (const extension of ['ts', 'mts', 'cts']) {
+    for (const cleanup of [true, false]) {
+        test(`flatten updates an unmoved declaration map for ${extension}, cleanup=${cleanup}`, async t => {
+            const source = 'export const x = 1;';
+            const mapFile = `types/index.d.${extension}.map`;
+            const fixture = await packageFixture(
+                t,
+                { name: 'fixture', version: '1.0.0', main: './dist/index.js', files: ['dist', 'types'] },
+                {
+                    'dist/index.js': source,
+                    [`types/index.d.${extension}`]: 'export declare const x = 1;',
+                    [mapFile]: JSON.stringify({
+                        version: 3,
+                        sources: ['../dist/index.js', null, 'https://example.test/source.ts'],
+                        sourcesContent: [source, null, null],
+                        names: ['x'],
+                        mappings: 'AAAA',
+                    }),
+                }
+            );
+            await fixture.run('--flatten=dist', ...(cleanup ? [] : ['--no-cleanup-files']));
+            const map = JSON.parse(await fixture.read(mapFile));
+            assert.deepEqual(map.sources, ['../index.js', null, 'https://example.test/source.ts']);
+            assert.deepEqual(map.sourcesContent, [source, null, null]);
+            assert.deepEqual(map.names, ['x']);
+            assert.equal(map.mappings, 'AAAA');
+            assert.equal(await fixture.read(`types/${map.sources[0]}`), source);
+        });
+    }
+}
+
+test('unmoved maps rebase sourceRoot before stripped source positions are adjusted', async t => {
+    const source = '// header\nexport const x = 1;\n';
+    const fixture = await packageFixture(
+        t,
+        { main: './dist/index.js', files: ['dist', 'types'] },
+        {
+            'dist/index.js': source,
+            'types/index.d.ts.map': JSON.stringify({
+                version: 3,
+                sourceRoot: '../dist',
+                sources: ['index.js'],
+                sourcesContent: [source],
+                names: [],
+                mappings: encode([[[0, 0, 1, 0]]]),
+            }),
+        }
+    );
+    await fixture.run('--flatten=dist', '--strip-comments');
+    const map = JSON.parse(await fixture.read('types/index.d.ts.map'));
+    assert.deepEqual(map.sources, ['../index.js']);
+    assert.equal(map.sourceRoot, undefined);
+    assert.deepEqual(map.sourcesContent, [await fixture.read('index.js')]);
+    assert.deepEqual(decode(map.mappings), [[[0, 0, 0, 0]]]);
+});
+
+test('flatten leaves unrelated and unpublished unmoved maps byte-for-byte unchanged', async t => {
+    const unrelated = '{"version":3,"sourceRoot":"https://example.test/","sources":["source.ts"],"mappings":""}';
+    const excluded = '{"version":3,"sources":["../dist/index.js"],"mappings":""}';
+    const fixture = await packageFixture(
+        t,
+        { main: './dist/index.js' },
+        {
+            'dist/index.js': 'export {};',
+            'unrelated.js.map': unrelated,
+            'invalid.map': 'null',
+            'private/index.js.map': excluded,
+            '.npmignore': 'private/\n',
+        }
+    );
+    await fixture.run('--flatten=dist', '--no-cleanup-files');
+    assert.equal(await fixture.read('unrelated.js.map'), unrelated);
+    assert.equal(await fixture.read('invalid.map'), 'null');
+    assert.equal(await fixture.read('private/index.js.map'), excluded);
+});
+
 test('declaration maps referencing unchanged TypeScript retain positions and embedded source', async t => {
     const source = '// TypeScript source\nexport const x = 1;';
     const map = { version: 3, sources: ['index.mts'], sourcesContent: [source], names: [], mappings: encode([[[0, 0, 1, 0]]]) };
