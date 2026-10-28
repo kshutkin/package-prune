@@ -3,6 +3,24 @@ import test from 'node:test';
 
 import { packageFixture } from './package-fixture.js';
 
+for (const cleanup of [true, false]) {
+    test(`publish whitelist handles repeated globstars with cleanup=${cleanup}`, async t => {
+        const fixture = await packageFixture(
+            t,
+            { name: 'fixture', version: '1.0.0', files: ['**/a/b/c/**/d/**'] },
+            {
+                'a/b/c/d/root.js': 'root',
+                'x/a/b/c/d/prefixed.js': 'prefixed',
+                'x/a/b/c/nested/d/nested.js': 'nested',
+                'a/b/c/private.js': 'private',
+            }
+        );
+        await fixture.run(...(cleanup ? [] : ['--no-cleanup-files']));
+        assert.deepEqual(await fixture.pack(), ['a/b/c/d/root.js', 'package.json', 'x/a/b/c/d/prefixed.js', 'x/a/b/c/nested/d/nested.js']);
+        if (!cleanup) assert.equal(await fixture.read('a/b/c/private.js'), 'private');
+    });
+}
+
 test('flatten cleanup preserves nonempty sibling directories', async t => {
     const fixture = await packageFixture(
         t,

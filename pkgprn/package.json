@@ -48,7 +48,7 @@
         "@niceties/logger": "^2.1.1",
         "@niceties/node-parseargs-plus": "^0.6.0",
         "ignore-walk": "^9.0.0",
-        "minimatch": "^10.2.6"
+        "minimatch": "^11.0.3"
     },
     "devDependencies": {
         "@types/ignore-walk": "^4.0.3",
