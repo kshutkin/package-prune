@@ -1,5 +1,11 @@
 # pkgprn-internal
 
+## 0.11.0
+
+### Minor Changes
+
+- d3ccf51: Upgrade the direct minimatch dependency to version 11 and its nonrecursive glob matching engine. Matching fixes can change publish selection or side-effect coverage for affected glob patterns. The supported Node.js versions are unchanged.
+
 ## 0.10.1
 
 ### Patch Changes
