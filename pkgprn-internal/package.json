@@ -27,7 +27,7 @@
         "@jridgewell/sourcemap-codec": "^1.6.0",
         "ignore-walk": "^9.0.0",
         "kleur": "^4.1.5",
-        "minimatch": "^10.2.6"
+        "minimatch": "^11.0.0"
     },
     "devDependencies": {
         "@rollup-extras/plugin-clean": "^2.0.1",
