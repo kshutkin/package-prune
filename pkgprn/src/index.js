@@ -72,6 +72,16 @@ try {
                     description: 'cleanup files not included in files array',
                     default: true,
                 },
+                npmVersion: {
+                    type: /** @type {(value: string) => 11|12} */ (
+                        value => {
+                            const version = Number(value);
+                            if (version !== 11 && version !== 12) throw new Error('npm-version must be 11 or 12');
+                            return version;
+                        }
+                    ),
+                    description: 'npm publish rules: 11 or 12 (default: detected)',
+                },
             },
         },
         [camelCase, customValue, optionalValue, help]

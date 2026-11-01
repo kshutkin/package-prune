@@ -3,9 +3,9 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { escape as escapeGlob, Minimatch } from 'minimatch';
-import packlist from 'npm-packlist';
 
 import { extractReferences } from './extract-references.js';
+import { getPublishFiles, resolveNpmVersion, resolvePublishOptions } from './npm-publish.js';
 import { filterNpmIgnore } from './npmignore.js';
 import { removeSourceMappingComments } from './sourcemap-comments.js';
 import { adjustSourcemapPositions, isStrippableFile, parseCommentTypes, stripCommentsWithLineMap } from './strip-comments.js';
@@ -53,6 +53,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {string|Array<unknown>|Record<string, unknown>|null} [exports]
  * @property {Record<string, unknown>} [imports]
  * @property {Record<string, unknown>} [typesVersions]
+ * @property {Record<string, string>} [patchedDependencies]
  */
 
 /**
@@ -63,6 +64,7 @@ const hardIgnored = new Set(['.git', '.npmrc', 'node_modules', 'package-lock.jso
  * @property {true|string[]|false} stripComments
  * @property {boolean} optimizeFiles
  * @property {boolean} cleanupFiles
+ * @property {11|12} [npmVersion] - npm publish rules; detected when omitted.
  */
 
 /**
@@ -81,6 +83,9 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     const typesToStrip = options.stripComments ? parseCommentTypes(options.stripComments) : undefined;
+    const npmVersion = await resolveNpmVersion(options.npmVersion);
+    const publishOptions = npmVersion === 12 ? await resolvePublishOptions() : {};
+    const authoredFiles = pkg.files?.slice();
 
     pkg.devDependencies = undefined;
     pkg.packageManager = undefined;
@@ -108,24 +113,27 @@ export async function prunePkg(pkg, options, logger) {
     let publishFiles;
     // Without cleanup, flattening must leave unpublished files in place even
     // when the whitelist is the only source of publish rules.
-    if (hasIgnoreFiles || (pkg.files && options.flatten && !options.cleanupFiles)) {
+    if (npmVersion === 12 || hasIgnoreFiles || (pkg.files && options.flatten && !options.cleanupFiles)) {
         const required = [
             ...explicitFiles,
             ...inventory.filter(file => isAlwaysIncludedByBasename(file) || (rootWhitelist && path.dirname(file) === '.')),
         ];
-        const selectedFiles = await filterNpmIgnore(inventory, {
-            files: pkg.files,
-            required,
-            hardIgnored,
-            defaults: [...alwaysIgnored, ...alwaysIgnoredPatterns, '.npmignore', '.gitignore'],
-        });
+        const selectedFiles =
+            npmVersion === 12
+                ? await getPublishFiles(pkg, npmVersion, inventory, await getBinFiles(pkg), publishOptions)
+                : await filterNpmIgnore(inventory, {
+                      files: pkg.files,
+                      required,
+                      hardIgnored,
+                      defaults: [...alwaysIgnored, ...alwaysIgnoredPatterns, '.npmignore', '.gitignore'],
+                  });
         publishFiles = new Set(selectedFiles);
-        if (hasIgnoreFiles) {
+        if (npmVersion === 12 || hasIgnoreFiles) {
             pkg.files = selectedFiles;
             explicitFiles.push(...selectedFiles);
         }
     }
-    if (!hasIgnoreFiles && pkg.files && Array.isArray(pkg.files)) {
+    if (npmVersion !== 12 && !hasIgnoreFiles && pkg.files && Array.isArray(pkg.files)) {
         pkg.files = expandFileGlobs(pkg.files, inventory);
     }
 
@@ -136,15 +144,24 @@ export async function prunePkg(pkg, options, logger) {
     }
 
     if (pkg.files && Array.isArray(pkg.files) && options.cleanupFiles) {
-        await cleanupDir(pkg, logger);
+        const ignoreFiles = npmVersion === 12 && hasIgnoreFiles ? await getRequiredIgnoreFiles(pkg, inventory, publishOptions) : [];
+        await cleanupDir(pkg, logger, publishFiles, ignoreFiles);
         // Cleanup keeps main even when its './' prefix prevents npm's implicit inclusion.
-        if (!hasIgnoreFiles && pkg.main?.startsWith('./')) pkg.files.push(normalizePath(pkg.main));
+        if (npmVersion !== 12 && !hasIgnoreFiles && pkg.main?.startsWith('./')) pkg.files.push(normalizePath(pkg.main));
     }
 
-    if (hasIgnoreFiles && rootWhitelist) pkg.files = rootWhitelist;
+    if (npmVersion !== 12 && hasIgnoreFiles && rootWhitelist) pkg.files = rootWhitelist;
 
     if (options.flatten) {
-        await flatten(pkg, options.flatten, logger, options.removeSourcemaps, publishFiles);
+        await flatten(
+            pkg,
+            options.flatten,
+            logger,
+            options.removeSourcemaps,
+            publishFiles,
+            npmVersion === 12 && !options.cleanupFiles,
+            publishOptions
+        );
     }
 
     if (options.removeSourcemaps) {
@@ -315,43 +332,75 @@ export async function prunePkg(pkg, options, logger) {
             ),
         ];
 
-        if (await hasRedundantFilesField(pkg)) pkg.files = undefined;
+        await optimizeFilesField(pkg, npmVersion, publishFiles, options.flatten ? undefined : authoredFiles, publishOptions);
     }
 }
 
 /**
  * Compare npm's publish selection with and without the final, escaped whitelist.
  * @param {PackageJson} pkg
- * @returns {Promise<boolean>}
+ * @param {11|12} npmVersion
+ * @param {Set<string>} [publishFiles]
+ * @param {string[]} [authoredFiles]
+ * @param {{globalIgnoreFile?: string}} [publishOptions]
  */
-async function hasRedundantFilesField(pkg) {
-    const binFiles = pkg.bin
+async function optimizeFilesField(pkg, npmVersion, publishFiles, authoredFiles, publishOptions) {
+    const inventory = await walkDir('.', ['node_modules', '.git'], false);
+    const binFiles = await getBinFiles(pkg);
+    const [withFiles, withoutFiles] = await Promise.all([
+        getPublishFiles(pkg, npmVersion, inventory, binFiles, publishOptions),
+        getPublishFiles({ ...pkg, files: undefined }, npmVersion, inventory, binFiles, publishOptions),
+    ]);
+    const expected = npmVersion === 12 && publishFiles ? inventory.filter(file => publishFiles.has(file)) : withFiles;
+    /** @param {string[]} files */
+    const matches = files => {
+        const selected = new Set(files);
+        return selected.size === expected.length && expected.every(file => selected.has(file));
+    };
+    if (inventory.includes('package.json') && matches(withoutFiles)) pkg.files = undefined;
+    else if (npmVersion === 12 && !matches(withFiles)) {
+        if (
+            authoredFiles &&
+            matches(await getPublishFiles({ ...pkg, files: authoredFiles }, npmVersion, inventory, binFiles, publishOptions))
+        ) {
+            pkg.files = authoredFiles;
+        } else {
+            throw new Error('npm 12 cannot preserve the selected filenames with a files whitelist after these transformations');
+        }
+    }
+}
+
+/**
+ * npm 12 cannot replace nested ignore negations with explicit file entries.
+ * Simulate removing ignore files before deleting any that affect selection.
+ * @param {PackageJson} pkg
+ * @param {string[]} inventory
+ * @param {{globalIgnoreFile?: string}} publishOptions
+ */
+async function getRequiredIgnoreFiles(pkg, inventory, publishOptions) {
+    const candidate = { ...pkg, files: pkg.files?.map(file => `./${escapeGlob(file.split(path.sep).join('/'))}`) };
+    const binFiles = await getBinFiles(pkg);
+    const baseline = new Set(await getPublishFiles(candidate, 12, inventory, binFiles, publishOptions));
+    let available = inventory;
+    const required = [];
+    for (const file of inventory.filter(file => ['.npmignore', '.gitignore'].includes(path.basename(file)))) {
+        const trial = available.filter(entry => entry !== file);
+        const selected = await getPublishFiles(candidate, 12, trial, binFiles, publishOptions);
+        if (selected.length === baseline.size && selected.every(entry => baseline.has(entry))) available = trial;
+        else required.push(file);
+    }
+    return required;
+}
+
+/** @param {PackageJson} pkg */
+async function getBinFiles(pkg) {
+    return pkg.bin
         ? typeof pkg.bin === 'string'
             ? [pkg.bin]
             : Object.values(pkg.bin)
         : typeof pkg.directories?.bin === 'string'
           ? await getDirectoryBinFiles(pkg.directories.bin)
           : [];
-    const tree = {
-        path: path.resolve('.'),
-        isProjectRoot: true,
-        package: {
-            ...pkg,
-            bin: Object.fromEntries(binFiles.map(file => [file, normalizePath(file)])),
-            // Bundled dependencies are independent of the root files field.
-            bundleDependencies: [],
-        },
-    };
-    // Only the root package is needed; dependency nodes are never traversed.
-    const listRootFiles = /** @type {(root: typeof tree) => Promise<string[]>} */ (/** @type {unknown} */ (packlist));
-    const [withFiles, withoutFiles] = await Promise.all([
-        listRootFiles(tree),
-        listRootFiles({ ...tree, package: { ...tree.package, files: undefined } }),
-    ]);
-    // Without an on-disk manifest, packlist never applies the package's rules.
-    if (!withFiles.includes('package.json')) return false;
-    const selected = new Set(withoutFiles);
-    return withFiles.length === selected.size && withFiles.every(file => selected.has(file));
 }
 
 /**
@@ -361,8 +410,10 @@ async function hasRedundantFilesField(pkg) {
  * @param {Logger} logger
  * @param {boolean} [skipSourcemapAdjust] - skip sourcemap adjustment (e.g. when sourcemaps will be removed)
  * @param {Set<string>} [publishFiles] - Resolved publish selection, updated as files move.
+ * @param {boolean} [checkNpm12Whitelist]
+ * @param {{globalIgnoreFile?: string}} [publishOptions]
  */
-async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) {
+async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles, checkNpm12Whitelist = false, publishOptions) {
     // find out where is the dist folder
 
     const allReferences = extractReferences(pkg);
@@ -480,6 +531,25 @@ async function flatten(pkg, flatten, logger, skipSourcemapAdjust, publishFiles) 
 
     if (filesAlreadyExist.length) {
         throw new Error(`dist folder cannot be flattened because files already exist: ${filesAlreadyExist.join(', ')}`);
+    }
+
+    if (
+        checkNpm12Whitelist &&
+        publishFiles &&
+        [...destinationToSource.keys()].some(
+            file =>
+                path.dirname(file) === '.' &&
+                !isAlwaysIncludedByBasename(file) &&
+                !new Minimatch(file, { nonegate: true, nocomment: true }).match(file)
+        )
+    ) {
+        const inventory = await walkDir('.', ['node_modules', '.git'], false);
+        const defaultFiles = await getPublishFiles({ ...pkg, files: undefined }, 12, inventory, await getBinFiles(pkg), publishOptions);
+        if (defaultFiles.some(file => !publishFiles.has(file))) {
+            throw new Error(
+                'npm 12 cannot preserve literal root filenames while excluded files remain; enable cleanup or keep their directory'
+            );
+        }
     }
 
     // handle directories.bin special case for each dist dir
@@ -938,7 +1008,8 @@ async function removeJunkFiles(dir, explicitFiles, selectedFiles) {
             selectedFiles.some(file => file.startsWith(`${fullPath}/`)) ||
             isAlwaysIncludedByBasename(fullPath);
         if (isAlwaysIgnored(entry.name) && !included) {
-            await rm(fullPath, { recursive: true, force: true });
+            if (entry.isDirectory()) await cleanupSubDir(fullPath, [], []);
+            else await rm(fullPath, { force: true });
         } else if (entry.isDirectory()) {
             await removeJunkFiles(fullPath, explicitFiles, selectedFiles);
         }
@@ -994,15 +1065,17 @@ function expandFileGlobs(files, inventory) {
  * or the always-included list.
  * @param {PackageJson} pkg
  * @param {Logger} logger
+ * @param {Set<string>} [publishFiles]
+ * @param {string[]} [ignoreFiles]
  */
-async function cleanupDir(pkg, logger) {
+async function cleanupDir(pkg, logger, publishFiles, ignoreFiles = []) {
     logger.update('cleaning up files...');
 
     // npm's explicit root entry includes everything and overrides root ignore rules.
     if (pkg.files?.includes('./')) return;
 
-    const alwaysIncludedFiles = await getAlwaysIncludedFiles(pkg);
-    const filesEntries = [.../** @type {string[]} */ (pkg.files).map(normalizePath), ...alwaysIncludedFiles];
+    const alwaysIncludedFiles = publishFiles ? [] : await getAlwaysIncludedFiles(pkg);
+    const filesEntries = [.../** @type {string[]} */ (pkg.files).map(normalizePath), ...alwaysIncludedFiles, ...ignoreFiles];
 
     const entries = await readdir('.');
 
@@ -1031,12 +1104,13 @@ async function cleanupDir(pkg, logger) {
         }
 
         // check if always-included by basename (root level)
-        if (isAlwaysIncludedByBasename(normalized)) {
+        if (!publishFiles && isAlwaysIncludedByBasename(normalized)) {
             continue;
         }
 
-        // not matched - remove
-        await rm(entry, { recursive: true, force: true });
+        // Descend before deleting so protected paths survive at every depth.
+        if (await isDirectory(normalized)) await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+        else await rm(entry, { force: true });
     }
 }
 
@@ -1075,8 +1149,8 @@ async function cleanupSubDir(dir, filesEntries, alwaysIncludedFiles) {
             continue;
         }
 
-        // not matched - remove
-        await rm(fullPath, { recursive: true, force: true });
+        if (await isDirectory(normalized)) await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+        else await rm(fullPath, { force: true });
     }
 
     // remove the directory if it's now empty

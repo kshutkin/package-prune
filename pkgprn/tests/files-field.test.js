@@ -5,7 +5,7 @@ import { packageFixture } from './package-fixture.js';
 
 const scenarios = [
     { name: 'all remaining files are allowed', files: ['index.js'], disk: { 'index.js': 'export {};' }, redundant: true },
-    { name: 'root whitelist is redundant', files: ['./'], disk: { 'index.js': 'export {};' }, redundant: true },
+    { name: 'root whitelist', files: ['./'], disk: { 'index.js': 'export {};' }, redundant: true, npm12Redundant: 'cleanup' },
     { name: 'empty whitelist only contains required metadata', files: [], disk: { 'README.md': 'read me' }, redundant: true },
     {
         name: 'unpublished files remain on disk',
@@ -59,7 +59,8 @@ for (const cleanup of [true, false]) {
             const args = cleanup ? [] : ['--no-cleanup-files'];
             await fixture.run(...args);
             assert.deepEqual(await fixture.pack(), before);
-            const redundant = scenario.redundant === 'cleanup' ? cleanup : scenario.redundant;
+            const expected = fixture.npmVersion === 12 ? (scenario.npm12Redundant ?? scenario.redundant) : scenario.redundant;
+            const redundant = expected === 'cleanup' ? cleanup : expected;
             assert.equal((await fixture.pkg()).files === undefined, redundant);
             await fixture.run(...args);
             assert.deepEqual(await fixture.pack(), before);

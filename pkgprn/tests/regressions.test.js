@@ -65,9 +65,13 @@ test('cleanup preserves main and bin ancestors while removing unlisted siblings'
             'assets/theme.css': 'body {}',
         }
     );
+    const before = await fixture.pack();
     await fixture.run();
-    assert.deepEqual(await fixture.pack(), ['assets/theme.css', 'dist/index.js', 'package.json', 'tools/bin/cli.js']);
-    assert.equal(await fixture.read('dist/index.js'), 'export {};');
+    // npm 12 no longer implicitly includes a main entry with a './' prefix.
+    const expected = ['assets/theme.css', ...(fixture.npmVersion === 11 ? ['dist/index.js'] : []), 'package.json', 'tools/bin/cli.js'];
+    assert.deepEqual(await fixture.pack(), expected);
+    if (fixture.npmVersion === 12) assert.deepEqual(await fixture.pack(), before);
+    else assert.equal(await fixture.read('dist/index.js'), 'export {};');
     assert.equal(await fixture.read('tools/bin/cli.js'), '#!/usr/bin/env node');
     await assert.rejects(fixture.read('dist/private.js'), { code: 'ENOENT' });
     await assert.rejects(fixture.read('tools/private.js'), { code: 'ENOENT' });

@@ -104,7 +104,12 @@ for (const scenario of cases) {
                 assert.deepEqual(await fixture.pack(), before);
             }
             for (const [file, content] of Object.entries(files)) {
-                if (args.length || before.includes(file)) assert.equal(await fixture.read(file), content);
+                if (
+                    args.length ||
+                    before.includes(file) ||
+                    (fixture.npmVersion === 12 && scenario.name === 'negated artifact' && file === 'dist/.npmignore')
+                )
+                    assert.equal(await fixture.read(file), content);
                 else await assert.rejects(fixture.read(file), { code: 'ENOENT' });
             }
         });

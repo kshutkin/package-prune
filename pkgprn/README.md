@@ -72,6 +72,7 @@ Additional optional features can be enabled via flags:
 | `--strip-comments`    | `string \| boolean` | `false`   | Strip comments from JS files. Pass without a value to strip JSDoc and regular comments, or provide comma-separated types: `jsdoc`, `license`, `regular`, `annotation`. |
 | `--optimize-files`    | `boolean`           | `true`    | Optimize the `files` array by collapsing entries.                                                                                                                      |
 | `--cleanup-files`     | `boolean`           | `true`    | Remove files excluded by the `files` array or package-local ignore rules.                                                                                              |
+| `--npm-version`       | `11` or `12`        | detected  | Select npm publish rules explicitly. npm 11 also covers older npm versions.                                                                                             |
 | `--version`           |                     |           | Show version number.                                                                                                                                                   |
 | `--help`              |                     |           | Show help message.                                                                                                                                                     |
 
@@ -238,6 +239,8 @@ await prunePkg(
         stripComments: false, // or true (jsdoc+regular), ["jsdoc"], ["license"], ["annotation"], etc.
         optimizeFiles: true,
         cleanupFiles: true,
+        // Optional: select npm 12 rules explicitly instead of detecting npm.
+        npmVersion: 12,
     },
     logger,
 );
@@ -253,9 +256,15 @@ await prunePkg(
 
 `pkgprn` reads `.npmignore` files in the current package and its subdirectories. When a directory has no `.npmignore`, its `.gitignore` is used instead. An empty `.npmignore` still takes precedence over `.gitignore`. Rules support negation, anchored paths, and directory patterns using npm's ignore matcher.
 
-An explicit `files` array overrides ignore files at the package root. Nested ignore files still apply inside included directories. Explicit file entries retain npm's override behavior. Always-included package metadata, documentation, and entry points are preserved.
+An explicit `files` array overrides ignore files at the package root. Nested ignore files still apply inside included directories. npm 11 lets explicit file entries override nested ignore rules; npm 12 applies those rules to explicit file entries as well. Required package metadata, documentation, and entry points follow the selected npm version's rules.
 
-Publish selection is resolved before files are changed. With cleanup enabled, excluded files and unused ignore files are removed. With `--no-cleanup-files`, excluded files and ignore files remain on disk; excluded files are omitted from flattening, comment stripping, and sourcemap removal. Flattening moves the selected files without relocating ignore rules. After these transformations, npm's packlist implementation compares the publish selection with and without the final `files` field. The field is removed only when both selections contain the same files; otherwise, a concrete whitelist is retained to preserve ignore overrides and explicit inclusions.
+The npm version is detected from npm's user agent, or from `npm --version` when invoked directly or through another package manager. Use `--npm-version=11` or `--npm-version=12` to select a target explicitly. The API accepts the equivalent optional `npmVersion: 11 | 12` setting. npm 12 treats empty and root `files` entries such as `""` and `"./"` as matching no content; use a directory or glob to include files.
+
+npm 12's `global-ignore-file` configuration is applied during selection and whitelist comparison, including environment, project, user, and prefix settings. Explicit `files` entries retain their override of global ignore rules.
+
+npm 12 cannot represent some literal names, such as `[name].js`, as individual whitelist entries. Authored directory patterns are preserved when needed. Flattening these names to the root with cleanup disabled is rejected before moving files when excluded files would otherwise become publishable.
+
+Publish selection is resolved before files are changed. With cleanup enabled, excluded files and unused ignore files are removed. npm 12 ignore files are retained when their negations are still needed to include selected files. With `--no-cleanup-files`, excluded files and ignore files remain on disk; excluded files are omitted from flattening, comment stripping, and sourcemap removal. Flattening moves the selected files without relocating ignore rules. After these transformations, the selected npm version's packlist implementation checks whether removing `files` preserves the resolved publish selection. The field is removed only when the selections match. Otherwise, a whitelist is retained, preserving authored patterns when npm 12 cannot represent literal filenames as individual entries.
 
 For example, `files: ["dist/**/*.js"]` together with `dist/.npmignore` containing `private.js` keeps `dist/public.js` in the package and excludes `dist/private.js`.
 

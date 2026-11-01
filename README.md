@@ -13,7 +13,9 @@ Prune package.json before publishing to npm
 
 Run `pnpm test` after installing dependencies with `pnpm install`.
 
-Package fixtures invoke the pinned npm 11 CLI with the current Node executable. This keeps publish-selection expectations aligned with `npm-packlist` 10 while CI tests both LTS and latest Node. npm 12 changes the packing rules and needs separate compatibility work.
+Tests run the package fixtures against pinned npm 11 and npm 12 CLIs using the current Node executable. CI repeats this compatibility matrix on LTS and latest Node. Golden filesystem snapshots cover the npm 11 contract; npm 12 is checked against its actual publish selection.
+
+Invocation tests also use pinned pnpm 11 and 12 releases. They cover `pnpm exec`, `pnpm run prepack`, npm detection from PATH, explicit overrides, and before/after `pnpm pack` selections with a prepack hook targeting npm 11 rules.
 
 # License
 

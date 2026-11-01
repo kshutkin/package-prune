@@ -138,7 +138,8 @@ for (const entries of [['hello.js'], ['hello.js', 'goodbye.mjs'], ['hello.js', '
                     ...entries.map(file => [`tools/${file}`, source]),
                     ['tools/.private.js', 'private'],
                     ['tools/.hidden/private.js', 'private'],
-                    ['tools/.npmignore', '*\n'],
+                    // npm 12 honors nested ignores even for explicit commands.
+                    ['tools/.npmignore', process.env.PKGPRN_TEST_NPM === '12' ? '.*\n' : '*\n'],
                 ])
             );
             await fixture.run('--flatten=tools', ...(cleanup ? [] : ['--no-cleanup-files']));
@@ -198,7 +199,7 @@ for (const operation of ['cleanup', 'comments', 'maps', 'flatten']) {
     });
 }
 
-test('flatten rejects symlink sourcemaps before moving files or modifying external targets', async t => {
+test('flatten never rebases symlink sourcemaps or modifies their external targets', async t => {
     const external = await mkdtemp(path.join(tmpdir(), 'pkgprn-external-map-'));
     t.after(() => rm(external, { recursive: true, force: true }));
     const target = path.join(external, 'debug.map');
@@ -214,12 +215,20 @@ test('flatten rejects symlink sourcemaps before moving files or modifying extern
     );
     await symlink(target, path.join(fixture.cwd, 'dist/index.js.map'));
     const pkg = await fixture.read('package.json');
-    await assert.rejects(fixture.run('--flatten'), error => /cannot rebase a symlink sourcemap/.test(error.stdout));
+    if (fixture.npmVersion === 12) {
+        // npm 12 selection excludes symlinks, so they are not moved or rebased.
+        await fixture.run('--flatten');
+        assert.equal(await fixture.read('index.js'), 'export {};');
+        assert.equal(await fixture.read('other.js'), 'original');
+        await assert.rejects(fixture.read('index.js.map'), { code: 'ENOENT' });
+    } else {
+        await assert.rejects(fixture.run('--flatten'), error => /cannot rebase a symlink sourcemap/.test(error.stdout));
+        assert.equal(await fixture.read('dist/index.js'), 'export {};');
+        assert.equal(await fixture.read('dist/other.js'), 'original');
+        assert.equal(await fixture.read('package.json'), pkg);
+        await assert.rejects(fixture.read('index.js'), { code: 'ENOENT' });
+    }
     assert.equal(await readFile(target, 'utf8'), original);
-    assert.equal(await fixture.read('dist/index.js'), 'export {};');
-    assert.equal(await fixture.read('dist/other.js'), 'original');
-    assert.equal(await fixture.read('package.json'), pkg);
-    await assert.rejects(fixture.read('index.js'), { code: 'ENOENT' });
 });
 
 for (const files of [
@@ -355,8 +364,15 @@ for (const cleanup of [true, false]) {
         const before = await fixture.pack();
         await fixture.run(...(cleanup ? [] : ['--no-cleanup-files']));
         assert.deepEqual(await fixture.pack(), before);
-        assert.ok((await fixture.pkg()).files.includes('./'));
-        assert.equal(await fixture.read('dist/index.js'), 'export {};');
+        if (fixture.npmVersion === 11) {
+            assert.ok((await fixture.pkg()).files.includes('./'));
+            assert.equal(await fixture.read('dist/index.js'), 'export {};');
+        } else if (cleanup) {
+            assert.equal((await fixture.pkg()).files, undefined);
+            await assert.rejects(fixture.read('dist/index.js'), { code: 'ENOENT' });
+        } else {
+            assert.deepEqual((await fixture.pkg()).files, []);
+        }
     });
 }
 
@@ -464,7 +480,7 @@ test('flatten rejects symlink destination ancestors', async t => {
     t.after(() => rm(external, { recursive: true, force: true }));
     const fixture = await packageFixture(t, {}, { 'dist/a/b.js': 'original' });
     await symlink(external, path.join(fixture.cwd, 'a'));
-    await assert.rejects(fixture.run('--flatten=dist'));
+    await assert.rejects(fixture.run('--flatten=dist', '--no-cleanup-files'));
     assert.equal(await fixture.read('dist/a/b.js'), 'original');
     await assert.rejects(readFile(path.join(external, 'b.js')), { code: 'ENOENT' });
 });

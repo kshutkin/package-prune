@@ -28,7 +28,8 @@
         "ignore-walk": "^9.0.0",
         "kleur": "^4.1.5",
         "minimatch": "^11.0.3",
-        "npm-packlist": "^10.0.4"
+        "npm-packlist": "^10.0.4",
+        "npm-packlist-v12": "npm:npm-packlist@^11.3.0"
     },
     "devDependencies": {
         "@rollup-extras/plugin-clean": "^2.0.1",
