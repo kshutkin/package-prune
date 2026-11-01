@@ -7,6 +7,8 @@ import { promisify } from 'node:util';
 
 const exec = promisify(execFile);
 const cli = fileURLToPath(new URL('../src/index.js', import.meta.url));
+// Keep the publish contract fixed while testing different Node versions.
+const npmCli = fileURLToPath(new URL('bin/npm-cli.js', import.meta.resolve('npm/package.json')));
 
 export async function packageFixture(t, pkg, files) {
     const cwd = await mkdtemp(path.join(tmpdir(), 'pkgprn-test-'));
@@ -20,8 +22,8 @@ export async function packageFixture(t, pkg, files) {
         read: file => readFile(path.join(cwd, file), 'utf8'),
         pkg: async () => JSON.parse(await readFile(path.join(cwd, 'package.json'), 'utf8')),
         pack: async () => {
-            const { stdout } = await exec('npm', ['pack', '--dry-run', '--ignore-scripts', '--json'], { cwd });
-            return JSON.parse(stdout)[0]
+            const { stdout } = await exec(process.execPath, [npmCli, 'pack', '--dry-run', '--ignore-scripts', '--json'], { cwd });
+            return Object.values(JSON.parse(stdout))[0]
                 .files.map(file => file.path)
                 .sort();
         },
