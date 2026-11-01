@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { escape as escapeGlob, Minimatch } from 'minimatch';
+import packlist from 'npm-packlist';
 
 import { extractReferences } from './extract-references.js';
 import { filterNpmIgnore } from './npmignore.js';
@@ -136,6 +137,8 @@ export async function prunePkg(pkg, options, logger) {
 
     if (pkg.files && Array.isArray(pkg.files) && options.cleanupFiles) {
         await cleanupDir(pkg, logger);
+        // Cleanup keeps main even when its './' prefix prevents npm's implicit inclusion.
+        if (!hasIgnoreFiles && pkg.main?.startsWith('./')) pkg.files.push(normalizePath(pkg.main));
     }
 
     if (hasIgnoreFiles && rootWhitelist) pkg.files = rootWhitelist;
@@ -296,12 +299,6 @@ export async function prunePkg(pkg, options, logger) {
         pkg.files = pkg.files.filter(dir => !ignoreDirs.includes(dir));
     }
 
-    // Keep overrides that npm would otherwise replace with its default ignore rules.
-    const preserveFiles =
-        hasIgnoreFiles || pkg.files?.some(file => file === './' || normalizePath(file).split(path.sep).some(isAlwaysIgnored));
-    if (options.cleanupFiles && !preserveFiles) {
-        pkg.files = undefined;
-    }
     if (pkg.files) {
         pkg.files = [
             ...new Set(
@@ -317,7 +314,44 @@ export async function prunePkg(pkg, options, logger) {
                 )
             ),
         ];
+
+        if (await hasRedundantFilesField(pkg)) pkg.files = undefined;
     }
+}
+
+/**
+ * Compare npm's publish selection with and without the final, escaped whitelist.
+ * @param {PackageJson} pkg
+ * @returns {Promise<boolean>}
+ */
+async function hasRedundantFilesField(pkg) {
+    const binFiles = pkg.bin
+        ? typeof pkg.bin === 'string'
+            ? [pkg.bin]
+            : Object.values(pkg.bin)
+        : typeof pkg.directories?.bin === 'string'
+          ? await getDirectoryBinFiles(pkg.directories.bin)
+          : [];
+    const tree = {
+        path: path.resolve('.'),
+        isProjectRoot: true,
+        package: {
+            ...pkg,
+            bin: Object.fromEntries(binFiles.map(file => [file, normalizePath(file)])),
+            // Bundled dependencies are independent of the root files field.
+            bundleDependencies: [],
+        },
+    };
+    // Only the root package is needed; dependency nodes are never traversed.
+    const listRootFiles = /** @type {(root: typeof tree) => Promise<string[]>} */ (/** @type {unknown} */ (packlist));
+    const [withFiles, withoutFiles] = await Promise.all([
+        listRootFiles(tree),
+        listRootFiles({ ...tree, package: { ...tree.package, files: undefined } }),
+    ]);
+    // Without an on-disk manifest, packlist never applies the package's rules.
+    if (!withFiles.includes('package.json')) return false;
+    const selected = new Set(withoutFiles);
+    return withFiles.length === selected.size && withFiles.every(file => selected.has(file));
 }
 
 /**
@@ -957,7 +991,7 @@ function expandFileGlobs(files, inventory) {
 
 /**
  * Removes files from the working directory that are not included in the `files` array
- * or the always-included list, then drops the `files` array from package.json.
+ * or the always-included list.
  * @param {PackageJson} pkg
  * @param {Logger} logger
  */

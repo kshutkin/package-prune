@@ -53,7 +53,7 @@ By default, `pkgprn` performs the following steps:
 2. **Removes `packageManager`** - Strips the `packageManager` field.
 3. **Prunes scripts** - Removes scripts that are not relevant to package consumers (based on the selected [profile](#profiles)).
 4. **Removes junk files** - Deletes OS and editor artifacts (`.DS_Store`, `*.orig`, `.*.swp`, `._*`, etc.) from the package directory.
-5. **Optimizes the `files` array** - Collapses individual file entries into their parent directory when all files in that directory are already listed, and removes entries that npm always includes automatically (`package.json`, `README`, `LICENSE`).
+5. **Optimizes the `files` array** - Collapses individual file entries into their parent directory when all files in that directory are already listed, and removes entries that npm always includes automatically (`package.json`, `README`, `LICENSE`). After all transformations, removes the entire field when npm would publish the same files without it, even with cleanup or entry optimization disabled.
 6. **Cleans up excluded files** - Applies the `files` array and package-local ignore files, then removes files outside the resolved publish selection. The `files` field is retained when needed to preserve ignore rules and explicit inclusions.
 
 Additional optional features can be enabled via flags:
@@ -255,7 +255,7 @@ await prunePkg(
 
 An explicit `files` array overrides ignore files at the package root. Nested ignore files still apply inside included directories. Explicit file entries retain npm's override behavior. Always-included package metadata, documentation, and entry points are preserved.
 
-Publish selection is resolved before files are changed. With cleanup enabled, excluded files and unused ignore files are removed. With `--no-cleanup-files`, excluded files and ignore files remain on disk; excluded files are omitted from flattening, comment stripping, and sourcemap removal. Flattening moves the selected files without relocating ignore rules. A concrete `files` whitelist is retained when needed to preserve the resolved selection after these transformations.
+Publish selection is resolved before files are changed. With cleanup enabled, excluded files and unused ignore files are removed. With `--no-cleanup-files`, excluded files and ignore files remain on disk; excluded files are omitted from flattening, comment stripping, and sourcemap removal. Flattening moves the selected files without relocating ignore rules. After these transformations, npm's packlist implementation compares the publish selection with and without the final `files` field. The field is removed only when both selections contain the same files; otherwise, a concrete whitelist is retained to preserve ignore overrides and explicit inclusions.
 
 For example, `files: ["dist/**/*.js"]` together with `dist/.npmignore` containing `private.js` keeps `dist/public.js` in the package and excludes `dist/private.js`.
 
