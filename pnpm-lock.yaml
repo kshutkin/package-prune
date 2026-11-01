@@ -42,8 +42,8 @@ importers:
         specifier: ^11.0.3
         version: 11.0.3
       npm-packlist:
-        specifier: ^10.0.4
-        version: 10.0.4
+        specifier: ^11.0.0
+        version: 11.3.0
       npm-packlist-v12:
         specifier: npm:npm-packlist@^11.3.0
         version: npm-packlist@11.3.0
@@ -94,8 +94,8 @@ importers:
         specifier: ^11.0.3
         version: 11.0.3
       npm-packlist:
-        specifier: ^10.0.4
-        version: 10.0.4
+        specifier: ^11.0.0
+        version: 11.3.0
       npm-packlist-v12:
         specifier: npm:npm-packlist@^11.3.0
         version: npm-packlist@11.3.0
@@ -848,10 +848,6 @@ packages:
     resolution: {integrity: sha512-Z+8unD6em/MJwyrkWQ2M3wygRGI1+MztbutiNwk1DCuEPXOZRWGjtcMPZYP1exY9iNZMhd7ZOSMQSo9WYtiQRw==}
     hasBin: true
 
-  ignore-walk@8.0.0:
-    resolution: {integrity: sha512-FCeMZT4NiRQGh+YkeKMtWrOmBgWjHjMJ26WQWrRQyoyzqevdaGSakUaJW5xQYmjLlUVk2qUnCjYVBax9EKKg8A==}
-    engines: {node: ^20.17.0 || >=22.9.0}
-
   ignore-walk@9.0.0:
     resolution: {integrity: sha512-tCBEZV2z2FNpIDl2vrhiWzIHzs4qOAuIDEO85eS02vZ3L1U3P56qpPL8GuGGAijDktAEaq2swMkO/Fmbo7YmfQ==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
@@ -946,10 +942,6 @@ packages:
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
     engines: {node: '>=4'}
-
-  npm-packlist@10.0.4:
-    resolution: {integrity: sha512-uMW73iajD8hiH4ZBxEV3HC+eTnppIqwakjOYuvgddnalIw2lJguKviK1pcUJDlIWm1wSJkchpDZDSVVsZEYRng==}
-    engines: {node: ^20.17.0 || >=22.9.0}
 
   npm-packlist@11.3.0:
     resolution: {integrity: sha512-cS1yVkyriZgQAbiK8PtwhZHEtsFOsKHsCg5Ww2ONckAvXIspgqd6o4WirOzvkupU24iMRZ4xtO4kb2iK2rbnag==}
@@ -1146,10 +1138,6 @@ packages:
     resolution: {integrity: sha512-CR0d7nknV1Zhsl2rPCrjHK/BxU1rce1qZgDPDByxBDSkR+rhQBXxsj4ua+3u1535SpMuIWTSgyKA3OP7MvZW0Q==}
     engines: {node: '>=18'}
     hasBin: true
-
-  proc-log@6.1.0:
-    resolution: {integrity: sha512-iG+GYldRf2BQ0UDUAd6JQ/RwzaQy6mXmsk/IzlYyal4A4SNFw54MeH4/tLkF4I5WoWG9SQwuqWzS99jaFQHBuQ==}
-    engines: {node: ^20.17.0 || >=22.9.0}
 
   proc-log@7.0.0:
     resolution: {integrity: sha512-FYgfaA69XZ93zaXLoMNQ+ViDXGGBgR8aLh03txzcFhV+9xOXx7+8DLCULrKKpR9+GsH9ZfHm82aSUPpozX0Ztg==}
@@ -1919,10 +1907,6 @@ snapshots:
 
   human-id@4.2.2: {}
 
-  ignore-walk@8.0.0:
-    dependencies:
-      minimatch: 10.2.6
-
   ignore-walk@9.0.0:
     dependencies:
       minimatch: 10.2.6
@@ -2006,11 +1990,6 @@ snapshots:
 
   mri@1.2.0: {}
 
-  npm-packlist@10.0.4:
-    dependencies:
-      ignore-walk: 8.0.0
-      proc-log: 6.1.0
-
   npm-packlist@11.3.0:
     dependencies:
       glob: 13.0.6
@@ -2068,8 +2047,6 @@ snapshots:
       '@pnpm/exe.linux-x64-musl': 12.16.1
       '@pnpm/exe.win32-arm64': 12.16.1
       '@pnpm/exe.win32-x64': 12.16.1
-
-  proc-log@6.1.0: {}
 
   proc-log@7.0.0: {}
 

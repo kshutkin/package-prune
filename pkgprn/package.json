@@ -49,7 +49,7 @@
         "@niceties/node-parseargs-plus": "^0.6.0",
         "ignore-walk": "^9.0.0",
         "minimatch": "^11.0.3",
-        "npm-packlist": "^10.0.4",
+        "npm-packlist": "^11.0.0",
         "npm-packlist-v12": "npm:npm-packlist@^11.3.0"
     },
     "devDependencies": {
