@@ -37,7 +37,7 @@
     "scripts": {
         "build": "dts-buddy",
         "prepack": "node ./src/index.js --flatten=types --flatten=src --strip-comments",
-        "test": "c8 --src=. --all -r=html -r=text node ./tests/run-tests.js"
+        "test": "c8 --src=. --all -r=html -r=text -r=json-summary node ./tests/run-tests.js"
     },
     "files": [
         "types",

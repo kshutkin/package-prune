@@ -17,6 +17,8 @@ Tests run the package fixtures against pinned npm 11 and npm 12 CLIs using the c
 
 Invocation tests also use pinned pnpm 11 and 12 releases. They cover `pnpm exec`, `pnpm run prepack`, npm detection from PATH, explicit overrides, and before/after `pnpm pack` selections with a prepack hook targeting npm 11 rules.
 
+Tests generate a local HTML report at `pkgprn/coverage/index.html` and a `coverage-summary.json` report for the shared pipeline's branch coverage badge action.
+
 # License
 
 [MIT](./LICENSE)

@@ -1,4 +1,66 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": ["config:recommended"]
+    "extends": ["config:recommended"],
+    "vulnerabilityAlerts": {
+        "enabled": true
+    },
+    "packageRules": [
+        {
+            "description": "Keep stable development tools on deliberate upgrades, with security fixes handled by vulnerability alerts",
+            "matchPackageNames": ["@changesets/**", "@biomejs/biome"],
+            "enabled": false
+        },
+        {
+            "description": "Keep the repository's Node 26 declaration baseline current within that major",
+            "matchPackageNames": ["@types/node"],
+            "allowedVersions": "26.x",
+            "rangeStrategy": "update-lockfile"
+        },
+        {
+            "description": "Prepare dts-buddy range bumps while disabling ordinary patch and major updates",
+            "matchPackageNames": ["dts-buddy"],
+            "enabled": false,
+            "rangeStrategy": "bump"
+        },
+        {
+            "description": "Enable ordinary dts-buddy minor updates",
+            "matchPackageNames": ["dts-buddy"],
+            "matchUpdateTypes": ["minor"],
+            "enabled": true
+        },
+        {
+            "description": "Keep the legacy npm fixture on npm 11",
+            "matchFileNames": ["pkgprn/package.json"],
+            "matchDepNames": ["npm"],
+            "allowedVersions": "11.x"
+        },
+        {
+            "description": "Keep the npm 12 fixture on its selected major",
+            "matchFileNames": ["pkgprn/package.json"],
+            "matchDepNames": ["npm-v12"],
+            "allowedVersions": "12.x"
+        },
+        {
+            "description": "Keep the pnpm 11 fixture on its selected major",
+            "matchFileNames": ["pkgprn/package.json"],
+            "matchDepNames": ["pnpm-v11"],
+            "allowedVersions": "11.x"
+        },
+        {
+            "description": "Keep the pnpm 12 fixture on its selected major",
+            "matchFileNames": ["pkgprn/package.json"],
+            "matchDepNames": ["pnpm-v12"],
+            "allowedVersions": "12.x"
+        },
+        {
+            "description": "Keep the legacy publish selector on npm-packlist 10",
+            "matchDepNames": ["npm-packlist"],
+            "allowedVersions": "10.x"
+        },
+        {
+            "description": "Keep the npm 12 publish selector on npm-packlist 11",
+            "matchDepNames": ["npm-packlist-v12"],
+            "allowedVersions": "11.x"
+        }
+    ]
 }
