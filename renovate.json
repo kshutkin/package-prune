@@ -7,7 +7,7 @@
     "packageRules": [
         {
             "description": "Keep stable development tools on deliberate upgrades, with security fixes handled by vulnerability alerts",
-            "matchPackageNames": ["@changesets/**", "@biomejs/biome"],
+            "matchPackageNames": ["@changesets/**", "@biomejs/biome", "rollup"],
             "enabled": false
         },
         {
