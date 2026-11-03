@@ -1,4 +1,5 @@
 [![.github/workflows/main.yml](https://github.com/kshutkin/package-prune/actions/workflows/main.yml/badge.svg)](https://github.com/kshutkin/package-prune/actions/workflows/main.yml)
+[![pkgprn branch coverage](https://raw.githubusercontent.com/kshutkin/package-prune/coverage/pkgprn/badge.svg)](https://github.com/kshutkin/package-prune/tree/coverage/pkgprn/coverage)
 
 # package-prune
 
