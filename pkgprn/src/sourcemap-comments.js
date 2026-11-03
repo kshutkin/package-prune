@@ -25,7 +25,7 @@ export function removeSourceMappingComments(source, filename) {
             result += before;
             if (!css) {
                 const newline = /\r\n|[\n\r\u2028\u2029]/.exec(source.slice(start, end));
-                result += newline ? newline[0] : /\s/.test(source[start - 1] || ' ') || /\s/.test(source[end] || ' ') ? '' : ' ';
+                result += newline ? newline[0] : /\s/.test(source[start - 1] || ' ') || /\s/.test(source[end]) ? '' : ' ';
             }
         }
         pos = end;

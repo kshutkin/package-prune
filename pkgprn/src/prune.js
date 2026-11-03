@@ -807,7 +807,7 @@ async function adjustSourcemapPaths(newMapPath, oldMapPath, oldToNew) {
         return;
     }
 
-    const newDir = path.dirname(newMapPath) || '.';
+    const newDir = path.dirname(newMapPath);
     let changed = newMapPath !== oldMapPath;
     const sources = map.sources.map((/** @type {string | null} */ source) => {
         const resolved = resolveSourceMapSource(source, map.sourceRoot, oldMapPath);
@@ -1008,7 +1008,7 @@ async function removeJunkFiles(dir, explicitFiles, selectedFiles) {
             selectedFiles.some(file => file.startsWith(`${fullPath}/`)) ||
             isAlwaysIncludedByBasename(fullPath);
         if (isAlwaysIgnored(entry.name) && !included) {
-            if (entry.isDirectory()) await cleanupSubDir(fullPath, [], []);
+            if (entry.isDirectory()) await cleanupSubDir(fullPath, []);
             else await rm(fullPath, { force: true });
         } else if (entry.isDirectory()) {
             await removeJunkFiles(fullPath, explicitFiles, selectedFiles);
@@ -1094,12 +1094,7 @@ async function cleanupDir(pkg, logger, publishFiles, ignoreFiles = []) {
         // check if any files entry is under this directory
         if (filesEntries.some(f => f.startsWith(`${normalized}/`)) && (await isDirectory(normalized))) {
             // need to recurse into this directory for granular cleanup
-            await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
-            continue;
-        }
-
-        // check if always-included by exact path
-        if (alwaysIncludedFiles.includes(normalized)) {
+            await cleanupSubDir(normalized, filesEntries);
             continue;
         }
 
@@ -1109,7 +1104,7 @@ async function cleanupDir(pkg, logger, publishFiles, ignoreFiles = []) {
         }
 
         // Descend before deleting so protected paths survive at every depth.
-        if (await isDirectory(normalized)) await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+        if (await isDirectory(normalized)) await cleanupSubDir(normalized, filesEntries);
         else await rm(entry, { force: true });
     }
 }
@@ -1119,9 +1114,8 @@ async function cleanupDir(pkg, logger, publishFiles, ignoreFiles = []) {
  * or always-included files.
  * @param {string} dir
  * @param {string[]} filesEntries
- * @param {string[]} alwaysIncludedFiles
  */
-async function cleanupSubDir(dir, filesEntries, alwaysIncludedFiles) {
+async function cleanupSubDir(dir, filesEntries) {
     const entries = await readdir(dir);
 
     for (const entry of entries) {
@@ -1140,16 +1134,11 @@ async function cleanupSubDir(dir, filesEntries, alwaysIncludedFiles) {
 
         // check if any files entry is under this path
         if (filesEntries.some(f => f.startsWith(`${normalized}/`)) && (await isDirectory(normalized))) {
-            await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+            await cleanupSubDir(normalized, filesEntries);
             continue;
         }
 
-        // check if always-included by exact path
-        if (alwaysIncludedFiles.includes(normalized)) {
-            continue;
-        }
-
-        if (await isDirectory(normalized)) await cleanupSubDir(normalized, filesEntries, alwaysIncludedFiles);
+        if (await isDirectory(normalized)) await cleanupSubDir(normalized, filesEntries);
         else await rm(fullPath, { force: true });
     }
 
