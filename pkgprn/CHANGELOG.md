@@ -1,5 +1,11 @@
 # pkgprn
 
+## 0.12.1
+
+### Patch Changes
+
+- 161e9ba: Remove unreachable cleanup checks and sourcemap fallbacks without changing behavior, and expand public API test coverage.
+
 ## 0.12.0
 
 ### Minor Changes
