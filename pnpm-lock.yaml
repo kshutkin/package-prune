@@ -70,8 +70,8 @@ importers:
         specifier: 11.20.0
         version: 11.20.0
       npm-v12:
-        specifier: npm:npm@12.1.0
-        version: npm@12.1.0
+        specifier: npm:npm@12.2.2
+        version: npm@12.2.2
       pnpm-v11:
         specifier: npm:pnpm@11.28.9
         version: pnpm@11.28.9
@@ -1026,8 +1026,8 @@ packages:
       - validate-npm-package-name
       - which
 
-  npm@12.1.0:
-    resolution: {integrity: sha512-Fyhu62pNx70YCs/5+dEmJQTFVmSKwvo5CA0qvBkGDRpob42MJ6G2RQ2tdxeKM4nYnIZDqkYAxEgqtoejn9QGtQ==}
+  npm@12.2.2:
+    resolution: {integrity: sha512-KglgbZyacf7jH+FHuNRqVuCzQi8VhI2a7J87Ix43FsPTuZoGWmIXXGdZtBUOA79vwL+IJREqURVzupA7PsQTcA==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
     hasBin: true
     bundledDependencies:
@@ -2019,7 +2019,7 @@ snapshots:
 
   npm@11.20.0: {}
 
-  npm@12.1.0: {}
+  npm@12.2.2: {}
 
   p-limit@3.1.0:
     dependencies:
