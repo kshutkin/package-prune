@@ -67,8 +67,8 @@ importers:
         specifier: ^0.8.3
         version: 0.8.3(typescript@5.8.3)
       npm:
-        specifier: 11.20.0
-        version: 11.20.0
+        specifier: 11.21.2
+        version: 11.21.2
       npm-v12:
         specifier: npm:npm@12.1.0
         version: npm@12.1.0
@@ -955,8 +955,8 @@ packages:
     resolution: {integrity: sha512-cS1yVkyriZgQAbiK8PtwhZHEtsFOsKHsCg5Ww2ONckAvXIspgqd6o4WirOzvkupU24iMRZ4xtO4kb2iK2rbnag==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
-  npm@11.20.0:
-    resolution: {integrity: sha512-dF3EDFwbYN+N5RUip+ZYDe0NeURK5BgqKOcvT1iNtUYhTMTl0FwWhBuXrS7KtXyduqyTMS5aaQaregnHDAxNgw==}
+  npm@11.21.2:
+    resolution: {integrity: sha512-7HPApk+AflMUavSseL1Pm6CnYqMIHk53x+KmuhqmTDqPkjPMgxIpTPcTqsE91EKNw4gFBJV9fnXiSdGm1DXq9A==}
     engines: {node: ^20.17.0 || >=22.9.0}
     hasBin: true
     bundledDependencies:
@@ -2017,7 +2017,7 @@ snapshots:
       ignore-walk: 9.0.0
       proc-log: 7.0.0
 
-  npm@11.20.0: {}
+  npm@11.21.2: {}
 
   npm@12.1.0: {}
 
