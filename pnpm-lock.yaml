@@ -102,7 +102,7 @@ importers:
     devDependencies:
       '@rollup-extras/plugin-clean':
         specifier: ^2.0.1
-        version: 2.0.1(rollup@4.65.0)
+        version: 2.0.2(rollup@4.65.0)
       '@rollup-extras/plugin-externals':
         specifier: ^2.0.1
         version: 2.0.1(rollup@4.65.0)
@@ -407,8 +407,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@rollup-extras/plugin-clean@2.0.1':
-    resolution: {integrity: sha512-JuG6vVOJSUStjtchCrTyAlm8APK9RG1eRzIYIQ2LX++HjayfpYLHm8Pwd7S0rzPGhKHxenUYarywrUtatL4/hA==}
+  '@rollup-extras/plugin-clean@2.0.2':
+    resolution: {integrity: sha512-rH7CPTPyxWjBa4CaaOUCTuq3djEzxByBPCv+u34DReFQqz8pnFT1FfMIqO3jIwTjfLaH+37sGAug/fZFaSX3fA==}
     engines: {node: '>=15'}
     peerDependencies:
       rollup: ^4.0.0
@@ -427,6 +427,15 @@ packages:
 
   '@rollup-extras/utils@2.0.0':
     resolution: {integrity: sha512-20/JAVzvQPvuTNIYnvSDq+BIH28iks1VnjT5RPJuI4SXcfSZtruV57Asw3++mjmJbhOihx8UdfFC3QVzuux3rw==}
+    engines: {node: '>=15'}
+    peerDependencies:
+      rollup: ^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
+  '@rollup-extras/utils@2.0.2':
+    resolution: {integrity: sha512-DkfiDNaTZkTskYMBuYQPKhA3UYAOZjzoVebgswY9IS8ZPuA0HO82r/+TRKhl+kOQbl14/ajNg6isL2wUWGyBAA==}
     engines: {node: '>=15'}
     peerDependencies:
       rollup: ^4.0.0
@@ -1537,10 +1546,10 @@ snapshots:
   '@pnpm/exe.win32-x64@12.16.1':
     optional: true
 
-  '@rollup-extras/plugin-clean@2.0.1(rollup@4.65.0)':
+  '@rollup-extras/plugin-clean@2.0.2(rollup@4.65.0)':
     dependencies:
       '@niceties/logger': 2.1.1
-      '@rollup-extras/utils': 2.0.0(rollup@4.65.0)
+      '@rollup-extras/utils': 2.0.2(rollup@4.65.0)
     optionalDependencies:
       rollup: 4.65.0
 
@@ -1554,6 +1563,12 @@ snapshots:
       rollup: 4.65.0
 
   '@rollup-extras/utils@2.0.0(rollup@4.65.0)':
+    dependencies:
+      '@niceties/logger': 2.1.1
+    optionalDependencies:
+      rollup: 4.65.0
+
+  '@rollup-extras/utils@2.0.2(rollup@4.65.0)':
     dependencies:
       '@niceties/logger': 2.1.1
     optionalDependencies:
