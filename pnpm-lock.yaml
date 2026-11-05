@@ -34,7 +34,7 @@ importers:
         version: 2.1.1
       '@niceties/node-parseargs-plus':
         specifier: ^0.6.0
-        version: 0.6.0
+        version: 0.6.1
       ignore-walk:
         specifier: ^9.0.0
         version: 9.0.0
@@ -319,8 +319,8 @@ packages:
     resolution: {integrity: sha512-taqDVn4TRCh3j5QJQNlWKE9MSHxGh7nr9zE8SkdHMvsijp6Vx6qd3XYSV7bF7nnYYC/JYjJILxfqDeEUeEjtfQ==}
     engines: {node: '>=15'}
 
-  '@niceties/node-parseargs-plus@0.6.0':
-    resolution: {integrity: sha512-wob8hWIyQvF4P7DMYX01ifeSTDnWDW3QUigrKEclnedRZArcnCPi9P7HMM7IKrVfnmhqyJX8nxk/TALClRmI6A==}
+  '@niceties/node-parseargs-plus@0.6.1':
+    resolution: {integrity: sha512-0qa7Ff7E3ZSQvnq2W8nUM7jDgOcuzdLoO7I2Yvp/BQi5wYf3hWmDiKkGcLCpdgpa3IGzlVYxXvf5VZg/vzj9Dw==}
     engines: {node: '>=18.3.0'}
 
   '@npm/types@1.0.2':
@@ -1487,7 +1487,7 @@ snapshots:
     dependencies:
       '@niceties/ansi': 1.1.2
 
-  '@niceties/node-parseargs-plus@0.6.0':
+  '@niceties/node-parseargs-plus@0.6.1':
     dependencies:
       '@niceties/ansi': 1.1.2
 
