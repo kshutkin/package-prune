@@ -62,6 +62,6 @@
         "npm": "11.20.0",
         "npm-v12": "npm:npm@12.1.0",
         "pnpm-v11": "npm:pnpm@11.28.9",
-        "pnpm-v12": "npm:pnpm@12.16.1"
+        "pnpm-v12": "npm:pnpm@12.18.0"
     }
 }
