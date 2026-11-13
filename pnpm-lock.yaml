@@ -73,8 +73,8 @@ importers:
         specifier: npm:npm@12.1.0
         version: npm@12.1.0
       pnpm-v11:
-        specifier: npm:pnpm@11.28.9
-        version: pnpm@11.28.9
+        specifier: npm:pnpm@11.28.12
+        version: pnpm@11.28.12
       pnpm-v12:
         specifier: npm:pnpm@12.16.1
         version: pnpm@12.16.1
@@ -1137,8 +1137,8 @@ packages:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
-  pnpm@11.28.9:
-    resolution: {integrity: sha512-NUIc6icg7KP1rXIrZ+jvGPTTzUdF7S/P6w3CiNTpQ3+tOHDZHuboPyaPD29+D2JyMxexlhe7Re5DMxcu9RFZ+A==}
+  pnpm@11.28.12:
+    resolution: {integrity: sha512-lIMzh+NdUD6K0QEEF83rgsEg5+abr98KnbBpBRW+rnFZJ0Vx5pK5arwqCF01Zv7FQ4Gv2Xj2X2SoU2Lf1+EI9w==}
     engines: {node: '>=22.13'}
     hasBin: true
 
@@ -2050,7 +2050,7 @@ snapshots:
 
   picomatch@4.0.7: {}
 
-  pnpm@11.28.9: {}
+  pnpm@11.28.12: {}
 
   pnpm@12.16.1:
     optionalDependencies:
