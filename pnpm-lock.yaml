@@ -37,7 +37,7 @@ importers:
         version: 0.6.0
       ignore-walk:
         specifier: ^9.0.0
-        version: 9.0.0
+        version: 9.0.1
       minimatch:
         specifier: ^11.0.3
         version: 11.0.3
@@ -86,7 +86,7 @@ importers:
         version: 1.6.0
       ignore-walk:
         specifier: ^9.0.0
-        version: 9.0.0
+        version: 9.0.1
       kleur:
         specifier: ^4.1.5
         version: 4.1.5
@@ -852,8 +852,8 @@ packages:
     resolution: {integrity: sha512-FCeMZT4NiRQGh+YkeKMtWrOmBgWjHjMJ26WQWrRQyoyzqevdaGSakUaJW5xQYmjLlUVk2qUnCjYVBax9EKKg8A==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  ignore-walk@9.0.0:
-    resolution: {integrity: sha512-tCBEZV2z2FNpIDl2vrhiWzIHzs4qOAuIDEO85eS02vZ3L1U3P56qpPL8GuGGAijDktAEaq2swMkO/Fmbo7YmfQ==}
+  ignore-walk@9.0.1:
+    resolution: {integrity: sha512-2SvJvF/GIOPrVy3wT7w4PXWUI9sSk4naOTlO3f0Dblf/UM51ISAKz4FIvtj3Um9WhvcKy1MySJN+sGjpE2AznQ==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
   import-meta-resolve@4.2.0:
@@ -1923,9 +1923,9 @@ snapshots:
     dependencies:
       minimatch: 10.2.6
 
-  ignore-walk@9.0.0:
+  ignore-walk@9.0.1:
     dependencies:
-      minimatch: 10.2.6
+      minimatch: 11.0.3
 
   import-meta-resolve@4.2.0: {}
 
@@ -2014,7 +2014,7 @@ snapshots:
   npm-packlist@11.3.0:
     dependencies:
       glob: 13.0.6
-      ignore-walk: 9.0.0
+      ignore-walk: 9.0.1
       proc-log: 7.0.0
 
   npm@11.20.0: {}
